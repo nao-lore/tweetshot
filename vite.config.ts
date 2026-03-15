@@ -6,12 +6,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/tweet': {
-        target: 'https://cdn.syndication.twimg.com',
+        target: 'https://api.fxtwitter.com',
         changeOrigin: true,
         rewrite: (path) => {
           const url = new URL(path, 'http://localhost');
           const id = url.searchParams.get('id');
-          return `/tweet-result?id=${id}&lang=ja&token=4`;
+          return `/status/${id}`;
         },
       },
       '/api/tiktok': {

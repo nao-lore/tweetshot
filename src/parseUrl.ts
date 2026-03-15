@@ -1,4 +1,5 @@
 import type { TweetData } from './types';
+import { fetchTweet } from './fetchTweet';
 import { isBlueskyUrl, fetchBlueskyPost } from './fetchBluesky';
 import { isTiktokUrl, fetchTiktokPost } from './fetchTiktok';
 
@@ -61,13 +62,8 @@ export async function fetchPost(input: string): Promise<TweetData> {
   }
 
   switch (parsed.platform) {
-    case 'twitter': {
-      const res = await fetch(`/api/tweet?id=${parsed.id}`);
-      if (!res.ok) {
-        throw new Error('ツイートを取得できませんでした');
-      }
-      return (await res.json()) as TweetData;
-    }
+    case 'twitter':
+      return fetchTweet(parsed.id);
     case 'bluesky':
       return fetchBlueskyPost(parsed.url);
     case 'tiktok':
