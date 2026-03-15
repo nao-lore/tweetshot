@@ -26,7 +26,7 @@ export interface SizePreset {
   height: number | null;
 }
 
-export type ExportFormat = 'png' | 'svg';
+export type ExportFormat = 'png' | 'svg' | 'jpeg' | 'webp';
 
 export const sizePresets: SizePreset[] = [
   { id: 'free', label: 'フリーサイズ', width: null, height: null },

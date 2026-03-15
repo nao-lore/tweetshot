@@ -3,6 +3,11 @@ import { Heart, MessageCircle } from 'lucide-react';
 import type { TweetData, Background, SizePreset } from './types';
 import { patternBackgroundSizes } from './backgrounds';
 import { BrandLogo } from './BrandLogo';
+import { LayoutCard } from './CardLayouts';
+import type { CardLayout } from './CardLayouts';
+import { TextHighlight } from './TextHighlight';
+import type { HighlightRule } from './TextHighlight';
+import { QRCodeOverlay } from './QRCode';
 
 interface Props {
   tweet: TweetData;
@@ -21,6 +26,12 @@ interface Props {
   brandLogoText?: string;
   brandLogoPosition?: 'bottom-center' | 'bottom-right' | 'top-right';
   displayText?: string;
+  fontFamily?: string;
+  layout?: CardLayout;
+  highlights?: HighlightRule[];
+  showQR?: boolean;
+  tweetUrl?: string;
+  transparentBg?: boolean;
 }
 
 function formatDate(dateStr: string): string {
@@ -45,14 +56,52 @@ function formatCount(n: number): string {
 }
 
 export const TweetCard = forwardRef<HTMLDivElement, Props>(
-  ({ tweet, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset, imageBackground, brandLogoUrl, brandLogoText = 'Made with TweetShot', brandLogoPosition = 'bottom-center', displayText }, ref) => {
+  ({ tweet, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset, imageBackground, brandLogoUrl, brandLogoText = 'Made with TweetShot', brandLogoPosition = 'bottom-center', displayText, fontFamily, layout = 'default', highlights = [], showQR = false, tweetUrl, transparentBg = false }, ref) => {
     const isDark = cardTheme === 'dark';
     const bgSize = patternBackgroundSizes[background.id];
+    const text = displayText ?? tweet.text;
+
+    // Use alternate layout if not default
+    if (layout !== 'default') {
+      const wrapperStyle: React.CSSProperties = {
+        background: transparentBg ? 'transparent' : (imageBackground ? `url(${imageBackground}) center/cover` : background.style),
+        padding: `${padding}px`,
+        ...(bgSize && !imageBackground && !transparentBg && {
+          backgroundSize: bgSize,
+          backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
+        }),
+        ...(sizePreset.width && {
+          width: `${sizePreset.width}px`,
+          height: sizePreset.height ? `${sizePreset.height}px` : undefined,
+          justifyContent: 'center',
+        }),
+      };
+
+      return (
+        <div ref={ref} className="tweet-shot-wrapper" style={wrapperStyle}>
+          <div style={{ position: 'relative' }}>
+            <LayoutCard
+              layout={layout}
+              tweet={{ ...tweet, text }}
+              isDark={isDark}
+              fontFamily={fontFamily ?? ''}
+              showMetrics={showMetrics}
+            />
+            {showQR && tweetUrl && (
+              <QRCodeOverlay url={tweetUrl} position="bottom-right" size={60} />
+            )}
+          </div>
+          {showWatermark && (
+            <BrandLogo logoUrl={brandLogoUrl ?? null} logoText={brandLogoText} position={brandLogoPosition} />
+          )}
+        </div>
+      );
+    }
 
     const wrapperStyle: React.CSSProperties = {
-      background: imageBackground ? `url(${imageBackground}) center/cover` : background.style,
+      background: transparentBg ? 'transparent' : (imageBackground ? `url(${imageBackground}) center/cover` : background.style),
       padding: `${padding}px`,
-      ...(bgSize && !imageBackground && {
+      ...(bgSize && !imageBackground && !transparentBg && {
         backgroundSize: bgSize,
         backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
       }),
@@ -67,10 +116,15 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
       boxShadow: shadow > 0 ? `0 ${shadow * 2}px ${shadow * 4}px rgba(0,0,0,${0.1 + shadow * 0.02})` : 'none',
       borderRadius: `${borderRadius}px`,
       ...(border && { border: `2px solid ${borderColor}` }),
+      ...(fontFamily && { fontFamily }),
     };
 
     const showBrandLogo = showWatermark && (brandLogoUrl || brandLogoText);
     const isTopPosition = brandLogoPosition === 'top-right';
+
+    const renderText = highlights.length > 0
+      ? <TextHighlight text={text} highlights={highlights} fontFamily={fontFamily} />
+      : text;
 
     return (
       <div
@@ -82,7 +136,7 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
           <BrandLogo logoUrl={brandLogoUrl ?? null} logoText={brandLogoText} position={brandLogoPosition} />
         )}
 
-        <div className={`tweet-card ${isDark ? 'dark' : ''}`} style={cardStyle}>
+        <div className={`tweet-card ${isDark ? 'dark' : ''}`} style={{ ...cardStyle, position: 'relative' }}>
           <div className="tweet-header">
             <img
               src={tweet.user.avatarUrl}
@@ -112,7 +166,7 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
             </svg>
           </div>
 
-          <div className="tweet-text">{displayText ?? tweet.text}</div>
+          <div className="tweet-text">{renderText}</div>
 
           {tweet.mediaUrl && (
             <img
@@ -138,6 +192,10 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
                 {formatCount(tweet.favoriteCount)}
               </span>
             </div>
+          )}
+
+          {showQR && tweetUrl && (
+            <QRCodeOverlay url={tweetUrl} position="bottom-right" size={60} />
           )}
         </div>
 

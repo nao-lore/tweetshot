@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Download, Copy, Check, Loader2, Sun, Moon, Layers, ListOrdered } from 'lucide-react';
 import type { TweetData, Background, ExportFormat } from './types';
 import { sizePresets } from './types';
@@ -19,10 +19,28 @@ import { useBrandLogo } from './useBrandLogo';
 import { TranslationPanel } from './TranslationPanel';
 import { useTranslation } from './useTranslation';
 import { UnsplashPicker } from './UnsplashPicker';
+import { type CardLayout, cardLayouts } from './CardLayouts';
+import { FontPicker, fontOptions } from './FontPicker';
+import { ShareButtons } from './ShareButtons';
+import { EmbedCodePanel } from './EmbedCodePanel';
+import { QRCode } from './QRCode';
+import { DropZone } from './DropZone';
+import { useHistory } from './useHistory';
+import { HistoryPanel } from './HistoryPanel';
+import { HighlightPanel } from './HighlightPanel';
+import type { HighlightRule } from './TextHighlight';
+import { useKeyboardShortcuts } from './useKeyboardShortcuts';
+import { ShortcutsHelp } from './ShortcutsHelp';
+import { useI18n } from './i18n';
+import { LangSwitcher } from './LangSwitcher';
+import { exportFormatOptions } from './exportFormats';
+import { TransparencyPreview } from './TransparentBg';
 
 type ViewMode = 'single' | 'thread' | 'bulk';
 
 export default function App() {
+  const { lang, setLang, t } = useI18n();
+
   const [url, setUrl] = useState('');
   const [tweet, setTweet] = useState<TweetData | null>(null);
   const [tweets, setTweets] = useState<TweetData[]>([]);
@@ -47,6 +65,14 @@ export default function App() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
   const [device, setDevice] = useState<DeviceType>('none');
 
+  // New Phase 3 controls
+  const [layout, setLayout] = useState<CardLayout>('default');
+  const [fontId, setFontId] = useState('system');
+  const [fontFamily, setFontFamily] = useState(fontOptions[0].family);
+  const [showQR, setShowQR] = useState(false);
+  const [highlights, setHighlights] = useState<HighlightRule[]>([]);
+  const [transparentBg, setTransparentBg] = useState(false);
+
   // Image background
   const [imageBackground, setImageBackground] = useState<string | null>(null);
 
@@ -57,8 +83,31 @@ export default function App() {
   const { isTranslated, reset: resetTranslation } = useTranslation(tweet?.text ?? '');
   const [displayText, setDisplayText] = useState<string | null>(null);
 
+  // History
+  const history = useHistory();
+
+  // Embed data
+  const [embedDataUrl, setEmbedDataUrl] = useState<string | null>(null);
+
   const cardRef = useRef<HTMLDivElement>(null);
-  const { download, copyToClipboard } = useScreenshot(cardRef, pixelRatio);
+  const { download, copyToClipboard, getDataUrl } = useScreenshot(cardRef, pixelRatio);
+
+  // Keyboard shortcuts
+  const handleDownload = useCallback(() => {
+    if (tweet) download(`tweetshot-${tweet.id}.png`, exportFormat, transparentBg);
+  }, [tweet, download, exportFormat, transparentBg]);
+
+  const handleCopyShortcut = useCallback(async () => {
+    const ok = await copyToClipboard();
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); }
+  }, [copyToClipboard]);
+
+  const { showHelp, setShowHelp } = useKeyboardShortcuts({
+    download: handleDownload,
+    copy: handleCopyShortcut,
+    toggleTheme: () => setCardTheme(prev => prev === 'light' ? 'dark' : 'light'),
+    generate: () => { if (url.trim()) handleGenerate(); },
+  }, true);
 
   // Handle URL params (from browser extension)
   useEffect(() => {
@@ -73,7 +122,7 @@ export default function App() {
   async function handleGenerate() {
     const parsed = parsePostUrl(url);
     if (!parsed) {
-      setError('有効なURLを入力してください（Twitter, Bluesky, TikTok対応）');
+      setError(t('error.invalidUrl'));
       return;
     }
 
@@ -96,7 +145,7 @@ export default function App() {
         setTweets([data]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : t('error.generic'));
     } finally {
       setLoading(false);
     }
@@ -116,19 +165,34 @@ export default function App() {
 
   function handleBulkResults(results: TweetData[]) {
     setTweets(results);
-    if (results.length > 0) {
-      setTweet(results[0]);
+    if (results.length > 0) setTweet(results[0]);
+  }
+
+  function handleTranslate(translated: string) { setDisplayText(translated); }
+  function handleResetTranslation() { setDisplayText(null); resetTranslation(); }
+
+  function handleDrop(droppedUrl: string) {
+    setUrl(droppedUrl);
+  }
+
+  function handleHistorySelect(tweetUrl: string) {
+    setUrl(tweetUrl);
+  }
+
+  // Save to history when tweet is generated
+  useEffect(() => {
+    if (tweet && cardRef.current) {
+      const timer = setTimeout(async () => {
+        const dataUrl = await getDataUrl('png');
+        if (dataUrl) {
+          history.addEntry(tweet, dataUrl, url);
+          setEmbedDataUrl(dataUrl);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }
-
-  function handleTranslate(translated: string) {
-    setDisplayText(translated);
-  }
-
-  function handleResetTranslation() {
-    setDisplayText(null);
-    resetTranslation();
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tweet?.id]);
 
   function loadTemplateSettings(settings: TemplateSettings) {
     setBackground(settings.background);
@@ -160,365 +224,341 @@ export default function App() {
   const hasTweet = tweet !== null;
   const showThread = viewMode === 'thread' && tweets.length > 1;
 
-  return (
-    <div className="app">
-      <header>
-        <h1>TweetShot</h1>
-        <p className="tagline">ツイートを美しい画像に変換（Twitter・Bluesky・TikTok対応）</p>
-      </header>
-
-      {/* View mode tabs */}
-      <div className="view-mode-tabs">
-        <button
-          className={`tab ${viewMode === 'single' ? 'active' : ''}`}
-          onClick={() => setViewMode('single')}
-          type="button"
-        >
-          単体
-        </button>
-        <button
-          className={`tab ${viewMode === 'thread' ? 'active' : ''}`}
-          onClick={() => setViewMode('thread')}
-          type="button"
-        >
-          <Layers size={14} /> スレッド
-        </button>
-        <button
-          className={`tab ${viewMode === 'bulk' ? 'active' : ''}`}
-          onClick={() => setViewMode('bulk')}
-          type="button"
-        >
-          <ListOrdered size={14} /> 一括
-        </button>
-      </div>
-
-      {viewMode === 'bulk' ? (
-        <BulkProcessor onResults={handleBulkResults} />
-      ) : (
-        <div className="input-row">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Twitter・Bluesky・TikTokのURLを貼り付け..."
-            spellCheck={false}
+  const previewContent = (
+    <div style={{
+      transform: previewScale < 1 ? `scale(${previewScale})` : undefined,
+      transformOrigin: 'top center',
+    }}>
+      <DeviceMockup device={device}>
+        {showThread ? (
+          <ThreadView
+            ref={cardRef}
+            tweets={tweets}
+            background={background}
+            cardTheme={cardTheme}
+            padding={padding}
+            shadow={shadow}
+            borderRadius={borderRadius}
+            showMetrics={showMetrics}
+            showWatermark={showWatermark}
+            border={border}
+            borderColor={borderColor}
+            sizePreset={sizePreset}
           />
-          <button
-            className="btn primary"
-            onClick={handleGenerate}
-            disabled={loading || !url.trim()}
-            type="button"
-          >
-            {loading ? <Loader2 size={18} className="spin" /> : '生成'}
+        ) : (
+          <TweetCard
+            ref={cardRef}
+            tweet={tweet!}
+            background={background}
+            cardTheme={cardTheme}
+            padding={padding}
+            shadow={shadow}
+            borderRadius={borderRadius}
+            showMetrics={showMetrics}
+            showWatermark={showWatermark}
+            border={border}
+            borderColor={borderColor}
+            sizePreset={sizePreset}
+            imageBackground={imageBackground}
+            brandLogoUrl={brandLogo.logoUrl}
+            brandLogoText={brandLogo.logoText}
+            brandLogoPosition={brandLogo.position}
+            displayText={displayText ?? undefined}
+            fontFamily={fontFamily}
+            layout={layout}
+            highlights={highlights}
+            showQR={showQR}
+            tweetUrl={url}
+            transparentBg={transparentBg}
+          />
+        )}
+      </DeviceMockup>
+    </div>
+  );
+
+  return (
+    <DropZone onDrop={handleDrop}>
+      <div className="app">
+        <header>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div />
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <h1>{t('app.title')}</h1>
+              <p className="tagline">{t('app.tagline')}</p>
+            </div>
+            <LangSwitcher lang={lang} onChange={setLang} />
+          </div>
+        </header>
+
+        {/* View mode tabs */}
+        <div className="view-mode-tabs">
+          <button className={`tab ${viewMode === 'single' ? 'active' : ''}`} onClick={() => setViewMode('single')} type="button">
+            {t('tab.single')}
+          </button>
+          <button className={`tab ${viewMode === 'thread' ? 'active' : ''}`} onClick={() => setViewMode('thread')} type="button">
+            <Layers size={14} /> {t('tab.thread')}
+          </button>
+          <button className={`tab ${viewMode === 'bulk' ? 'active' : ''}`} onClick={() => setViewMode('bulk')} type="button">
+            <ListOrdered size={14} /> {t('tab.bulk')}
           </button>
         </div>
-      )}
 
-      {error && <div className="error-box">{error}</div>}
-
-      {/* Bulk results selector */}
-      {viewMode === 'bulk' && tweets.length > 1 && (
-        <div className="bulk-results">
-          <label style={{ color: '#888', fontSize: 12, marginBottom: 8, display: 'block' }}>
-            {tweets.length}件取得完了 — クリックでプレビュー
-          </label>
-          <div className="bulk-list">
-            {tweets.map((t) => (
-              <button
-                key={t.id}
-                className={`bulk-item ${tweet?.id === t.id ? 'active' : ''}`}
-                onClick={() => { setTweet(t); setDisplayText(null); }}
-                type="button"
-              >
-                <span className="bulk-item-name">@{t.user.screenName}</span>
-                <span className="bulk-item-text">{t.text.slice(0, 40)}...</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {hasTweet && (
-        <>
-          {/* Translation */}
-          <div className="control-section" style={{ marginBottom: 16 }}>
-            <TranslationPanel
-              originalText={tweet.text}
-              onTranslate={handleTranslate}
-              onReset={handleResetTranslation}
-              isTranslated={isTranslated || displayText !== null}
+        {viewMode === 'bulk' ? (
+          <BulkProcessor onResults={handleBulkResults} />
+        ) : (
+          <div className="input-row">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t('input.placeholder')}
+              spellCheck={false}
             />
+            <button className="btn primary" onClick={handleGenerate} disabled={loading || !url.trim()} type="button">
+              {loading ? <Loader2 size={18} className="spin" /> : t('btn.generate')}
+            </button>
           </div>
+        )}
 
-          <div className="preview-container">
-            <div style={{
-              transform: previewScale < 1 ? `scale(${previewScale})` : undefined,
-              transformOrigin: 'top center',
-            }}>
-              <DeviceMockup device={device}>
-                {showThread ? (
-                  <ThreadView
-                    ref={cardRef}
-                    tweets={tweets}
-                    background={background}
-                    cardTheme={cardTheme}
-                    padding={padding}
-                    shadow={shadow}
-                    borderRadius={borderRadius}
-                    showMetrics={showMetrics}
-                    showWatermark={showWatermark}
-                    border={border}
-                    borderColor={borderColor}
-                    sizePreset={sizePreset}
-                  />
-                ) : (
-                  <TweetCard
-                    ref={cardRef}
-                    tweet={tweet}
-                    background={background}
-                    cardTheme={cardTheme}
-                    padding={padding}
-                    shadow={shadow}
-                    borderRadius={borderRadius}
-                    showMetrics={showMetrics}
-                    showWatermark={showWatermark}
-                    border={border}
-                    borderColor={borderColor}
-                    sizePreset={sizePreset}
-                    imageBackground={imageBackground}
-                    brandLogoUrl={brandLogo.logoUrl}
-                    brandLogoText={brandLogo.logoText}
-                    brandLogoPosition={brandLogo.position}
-                    displayText={displayText ?? undefined}
-                  />
-                )}
-              </DeviceMockup>
-            </div>
-          </div>
+        {error && <div className="error-box">{error}</div>}
 
-          <div className="controls">
-            <div className="control-section">
-              <label>背景</label>
-              <BackgroundPicker
-                selected={background.id}
-                onChange={(bg) => { setBackground(bg); setImageBackground(null); }}
-                customColor={customColor}
-                onCustomColorChange={setCustomColor}
-              />
-              <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <UnsplashPicker
-                  onSelect={(url) => setImageBackground(url)}
-                  onClear={() => setImageBackground(null)}
-                  currentUrl={imageBackground}
-                />
-              </div>
-            </div>
-
-            <div className="control-row">
-              <div className="control-section">
-                <label>テーマ</label>
-                <button
-                  className="btn icon-toggle"
-                  onClick={() =>
-                    setCardTheme(cardTheme === 'light' ? 'dark' : 'light')
-                  }
-                  type="button"
-                >
-                  {cardTheme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
-                  {cardTheme === 'light' ? 'ライト' : 'ダーク'}
+        {/* Bulk results selector */}
+        {viewMode === 'bulk' && tweets.length > 1 && (
+          <div className="bulk-results">
+            <label style={{ color: '#888', fontSize: 12, marginBottom: 8, display: 'block' }}>
+              {tweets.length}件取得完了
+            </label>
+            <div className="bulk-list">
+              {tweets.map((tw) => (
+                <button key={tw.id} className={`bulk-item ${tweet?.id === tw.id ? 'active' : ''}`}
+                  onClick={() => { setTweet(tw); setDisplayText(null); }} type="button">
+                  <span className="bulk-item-name">@{tw.user.screenName}</span>
+                  <span className="bulk-item-text">{tw.text.slice(0, 40)}...</span>
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-              <div className="control-section">
-                <label>余白</label>
-                <input
-                  type="range"
-                  min={16}
-                  max={80}
-                  value={padding}
-                  onChange={(e) => setPadding(Number(e.target.value))}
-                />
-              </div>
+        {hasTweet && (
+          <>
+            {/* Translation */}
+            <div className="control-section" style={{ marginBottom: 16 }}>
+              <TranslationPanel
+                originalText={tweet.text}
+                onTranslate={handleTranslate}
+                onReset={handleResetTranslation}
+                isTranslated={isTranslated || displayText !== null}
+              />
             </div>
 
-            <div className="control-row">
-              <div className="control-section">
-                <label>影</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={20}
-                  value={shadow}
-                  onChange={(e) => setShadow(Number(e.target.value))}
-                />
-              </div>
-
-              <div className="control-section">
-                <label>角丸</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={24}
-                  value={borderRadius}
-                  onChange={(e) => setBorderRadius(Number(e.target.value))}
-                />
-              </div>
+            <div className="preview-container">
+              {transparentBg ? (
+                <TransparencyPreview>{previewContent}</TransparencyPreview>
+              ) : previewContent}
             </div>
 
-            <div className="control-row">
+            <div className="controls">
+              {/* Background */}
               <div className="control-section">
-                <label>枠線</label>
-                <div className="toggle-with-color">
+                <label>{t('label.background')}</label>
+                <BackgroundPicker
+                  selected={transparentBg ? '' : background.id}
+                  onChange={(bg) => { setBackground(bg); setImageBackground(null); setTransparentBg(false); }}
+                  customColor={customColor}
+                  onCustomColorChange={setCustomColor}
+                />
+                <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <UnsplashPicker
+                    onSelect={(u) => { setImageBackground(u); setTransparentBg(false); }}
+                    onClear={() => setImageBackground(null)}
+                    currentUrl={imageBackground}
+                  />
                   <button
-                    className={`btn icon-toggle ${border ? 'active-toggle' : ''}`}
-                    onClick={() => setBorder(!border)}
+                    className={`btn icon-toggle ${transparentBg ? 'active-toggle' : ''}`}
+                    onClick={() => { setTransparentBg(!transparentBg); if (!transparentBg) setImageBackground(null); }}
                     type="button"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
                   >
-                    {border ? 'ON' : 'OFF'}
+                    {t('transparent')}
                   </button>
-                  {border && (
-                    <input
-                      type="color"
-                      value={borderColor}
-                      onChange={(e) => setBorderColor(e.target.value)}
-                      className="color-input-small"
-                    />
-                  )}
                 </div>
               </div>
 
-              <div className="control-section">
-                <label>メトリクス</label>
-                <button
-                  className={`btn icon-toggle ${showMetrics ? 'active-toggle' : ''}`}
-                  onClick={() => setShowMetrics(!showMetrics)}
-                  type="button"
-                >
-                  {showMetrics ? '表示' : '非表示'}
-                </button>
-              </div>
-
-              <div className="control-section">
-                <label>ウォーターマーク</label>
-                <button
-                  className={`btn icon-toggle ${showWatermark ? 'active-toggle' : ''}`}
-                  onClick={() => setShowWatermark(!showWatermark)}
-                  type="button"
-                >
-                  {showWatermark ? '表示' : '非表示'}
-                </button>
-              </div>
-            </div>
-
-            <div className="control-row">
-              <div className="control-section">
-                <label>サイズ</label>
-                <select
-                  value={sizePreset.id}
-                  onChange={(e) => setSizePreset(sizePresets.find(p => p.id === e.target.value) ?? sizePresets[0])}
-                  className="select-input"
-                >
-                  {sizePresets.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.label}{p.width ? ` (${p.width}×${p.height})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="control-section">
-                <label>解像度</label>
-                <select
-                  value={pixelRatio}
-                  onChange={(e) => setPixelRatio(Number(e.target.value))}
-                  className="select-input"
-                >
-                  <option value={1}>1x</option>
-                  <option value={2}>2x</option>
-                  <option value={4}>4x</option>
-                </select>
-              </div>
-
-              <div className="control-section">
-                <label>フォーマット</label>
-                <select
-                  value={exportFormat}
-                  onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-                  className="select-input"
-                >
-                  <option value="png">PNG</option>
-                  <option value="svg">SVG</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Device mockup selector */}
-            <div className="control-section">
-              <label>デバイスモックアップ</label>
-              <div className="device-selector">
-                {deviceOptions.map(d => (
-                  <button
-                    key={d.id}
-                    className={`btn icon-toggle ${device === d.id ? 'active-toggle' : ''}`}
-                    onClick={() => setDevice(d.id)}
-                    type="button"
-                    style={{ fontSize: 12, padding: '6px 12px' }}
-                  >
-                    {d.label}
+              {/* Theme + Padding */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>{t('label.theme')}</label>
+                  <button className="btn icon-toggle" onClick={() => setCardTheme(cardTheme === 'light' ? 'dark' : 'light')} type="button">
+                    {cardTheme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+                    {cardTheme === 'light' ? t('theme.light') : t('theme.dark')}
                   </button>
-                ))}
+                </div>
+                <div className="control-section">
+                  <label>{t('label.padding')}</label>
+                  <input type="range" min={16} max={80} value={padding} onChange={(e) => setPadding(Number(e.target.value))} />
+                </div>
+              </div>
+
+              {/* Shadow + Radius */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>{t('label.shadow')}</label>
+                  <input type="range" min={0} max={20} value={shadow} onChange={(e) => setShadow(Number(e.target.value))} />
+                </div>
+                <div className="control-section">
+                  <label>{t('label.borderRadius')}</label>
+                  <input type="range" min={0} max={24} value={borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+                </div>
+              </div>
+
+              {/* Border + Metrics + Watermark */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>{t('label.border')}</label>
+                  <div className="toggle-with-color">
+                    <button className={`btn icon-toggle ${border ? 'active-toggle' : ''}`} onClick={() => setBorder(!border)} type="button">
+                      {border ? 'ON' : 'OFF'}
+                    </button>
+                    {border && <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} className="color-input-small" />}
+                  </div>
+                </div>
+                <div className="control-section">
+                  <label>{t('label.metrics')}</label>
+                  <button className={`btn icon-toggle ${showMetrics ? 'active-toggle' : ''}`} onClick={() => setShowMetrics(!showMetrics)} type="button">
+                    {showMetrics ? t('show') : t('hide')}
+                  </button>
+                </div>
+                <div className="control-section">
+                  <label>{t('label.watermark')}</label>
+                  <button className={`btn icon-toggle ${showWatermark ? 'active-toggle' : ''}`} onClick={() => setShowWatermark(!showWatermark)} type="button">
+                    {showWatermark ? t('show') : t('hide')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Layout + Font */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>{t('label.layout')}</label>
+                  <select value={layout} onChange={(e) => setLayout(e.target.value as CardLayout)} className="select-input">
+                    {cardLayouts.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                  </select>
+                </div>
+                <div className="control-section">
+                  <label>{t('label.font')}</label>
+                  <FontPicker selected={fontId} onChange={(id, family) => { setFontId(id); setFontFamily(family); }} />
+                </div>
+              </div>
+
+              {/* Size + Resolution + Format */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>{t('label.size')}</label>
+                  <select value={sizePreset.id} onChange={(e) => setSizePreset(sizePresets.find(p => p.id === e.target.value) ?? sizePresets[0])} className="select-input">
+                    {sizePresets.map(p => <option key={p.id} value={p.id}>{p.label}{p.width ? ` (${p.width}×${p.height})` : ''}</option>)}
+                  </select>
+                </div>
+                <div className="control-section">
+                  <label>{t('label.resolution')}</label>
+                  <select value={pixelRatio} onChange={(e) => setPixelRatio(Number(e.target.value))} className="select-input">
+                    <option value={1}>1x</option>
+                    <option value={2}>2x</option>
+                    <option value={4}>4x</option>
+                  </select>
+                </div>
+                <div className="control-section">
+                  <label>{t('label.format')}</label>
+                  <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value as ExportFormat)} className="select-input">
+                    {exportFormatOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* QR Code toggle */}
+              <div className="control-row">
+                <div className="control-section">
+                  <label>QRコード</label>
+                  <button className={`btn icon-toggle ${showQR ? 'active-toggle' : ''}`} onClick={() => setShowQR(!showQR)} type="button">
+                    {showQR ? t('show') : t('hide')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Device mockup */}
+              <div className="control-section">
+                <label>{t('label.device')}</label>
+                <div className="device-selector">
+                  {deviceOptions.map(d => (
+                    <button key={d.id} className={`btn icon-toggle ${device === d.id ? 'active-toggle' : ''}`}
+                      onClick={() => setDevice(d.id)} type="button" style={{ fontSize: 12, padding: '6px 12px' }}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Highlight */}
+              <div className="control-section">
+                <label>{t('label.highlight')}</label>
+                <HighlightPanel rules={highlights} onChange={setHighlights} />
+              </div>
+
+              {/* Brand logo */}
+              <BrandLogoPanel
+                logoUrl={brandLogo.logoUrl}
+                logoText={brandLogo.logoText}
+                position={brandLogo.position}
+                onLogoFile={brandLogo.setLogoFile}
+                onLogoText={brandLogo.setLogoText}
+                onPosition={brandLogo.setPosition}
+                onClear={brandLogo.clearLogo}
+              />
+
+              {/* Templates */}
+              <TemplatePanel onLoad={loadTemplateSettings} currentSettings={currentSettings} />
+
+              {/* Action buttons */}
+              <div className="action-buttons">
+                <button className="btn primary" onClick={handleDownload} type="button">
+                  <Download size={16} /> {t('btn.download')} ({exportFormatOptions.find(f => f.id === exportFormat)?.label})
+                </button>
+                <button className="btn secondary" onClick={handleCopy} type="button">
+                  {copied ? <><Check size={16} /> {t('btn.copied')}</> : <><Copy size={16} /> {t('btn.copy')}</>}
+                </button>
+              </div>
+
+              {/* Share + QR preview + Embed */}
+              <div className="control-section">
+                <label>共有</label>
+                <ShareButtons tweetUrl={url} />
+              </div>
+
+              {showQR && (
+                <div className="control-section">
+                  <label>QRコードプレビュー</label>
+                  <QRCode url={url} size={120} show={true} />
+                </div>
+              )}
+
+              <div className="control-section">
+                <label>埋め込みコード</label>
+                <EmbedCodePanel tweetUrl={url} imageDataUrl={embedDataUrl} />
               </div>
             </div>
+          </>
+        )}
 
-            {/* Brand logo */}
-            <BrandLogoPanel
-              logoUrl={brandLogo.logoUrl}
-              logoText={brandLogo.logoText}
-              position={brandLogo.position}
-              onLogoFile={brandLogo.setLogoFile}
-              onLogoText={brandLogo.setLogoText}
-              onPosition={brandLogo.setPosition}
-              onClear={brandLogo.clearLogo}
-            />
+        {/* History */}
+        <HistoryPanel onSelect={handleHistorySelect} />
 
-            {/* Templates */}
-            <TemplatePanel
-              onLoad={loadTemplateSettings}
-              currentSettings={currentSettings}
-            />
+        <footer>
+          <p>{t('footer.text')}</p>
+        </footer>
+      </div>
 
-            <div className="action-buttons">
-              <button
-                className="btn primary"
-                onClick={() => download(`tweetshot-${tweet.id}.png`, exportFormat)}
-                type="button"
-              >
-                <Download size={16} /> ダウンロード ({exportFormat.toUpperCase()})
-              </button>
-              <button
-                className="btn secondary"
-                onClick={handleCopy}
-                type="button"
-              >
-                {copied ? (
-                  <>
-                    <Check size={16} /> コピー済み
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} /> クリップボードにコピー
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      <footer>
-        <p>Twitter・Bluesky・TikTokのURLを貼るだけ。インスタ・ブログ・noteに最適な画像を生成。</p>
-      </footer>
-    </div>
+      <ShortcutsHelp open={showHelp} onClose={() => setShowHelp(false)} />
+    </DropZone>
   );
 }
