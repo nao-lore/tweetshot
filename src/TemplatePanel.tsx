@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Save, Trash2 } from 'lucide-react';
 import { useTemplates } from './useTemplates';
 import type { TemplateSettings } from './useTemplates';
+import { useI18n } from './i18n';
 
 interface Props {
   onLoad: (settings: TemplateSettings) => void;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function TemplatePanel({ onLoad, currentSettings }: Props) {
+  const { t } = useI18n();
   const { templates, saveTemplate, deleteTemplate, loadTemplate } = useTemplates();
   const [name, setName] = useState('');
   const [showInput, setShowInput] = useState(false);
@@ -41,7 +43,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
       gap: '12px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <label style={{ color: '#aaa', fontSize: '13px' }}>テンプレート</label>
+        <label style={{ color: '#aaa', fontSize: '13px' }}>{t('label.template')}</label>
         {!showInput && (
           <button
             className="btn secondary"
@@ -49,7 +51,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
             type="button"
             style={{ fontSize: '12px', padding: '4px 10px' }}
           >
-            <Save size={14} /> テンプレート保存
+            <Save size={14} /> {t('template.save')}
           </button>
         )}
       </div>
@@ -61,7 +63,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="テンプレート名..."
+            placeholder={t('template.namePlaceholder')}
             style={{
               flex: 1,
               background: '#2a2a2a',
@@ -80,7 +82,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
             type="button"
             style={{ fontSize: '12px', padding: '4px 10px' }}
           >
-            保存
+            {t('template.saveBtn')}
           </button>
           <button
             className="btn secondary"
@@ -88,7 +90,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
             type="button"
             style={{ fontSize: '12px', padding: '4px 10px' }}
           >
-            取消
+            {t('template.cancel')}
           </button>
         </div>
       )}
@@ -99,9 +101,9 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
           gap: '8px',
         }}>
-          {templates.map((t) => (
+          {templates.map((tmpl) => (
             <div
-              key={t.id}
+              key={tmpl.id}
               style={{
                 background: '#2a2a2a',
                 borderRadius: '8px',
@@ -119,26 +121,26 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}>
-                {t.name}
+                {tmpl.name}
               </div>
               <div style={{
                 color: '#666',
                 fontSize: '11px',
               }}>
-                {t.settings.cardTheme === 'dark' ? 'ダーク' : 'ライト'} / {t.settings.background.label}
+                {tmpl.settings.cardTheme === 'dark' ? 'ダーク' : 'ライト'} / {tmpl.settings.background.label}
               </div>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <button
                   className="btn secondary"
-                  onClick={() => handleLoad(t.id)}
+                  onClick={() => handleLoad(tmpl.id)}
                   type="button"
                   style={{ fontSize: '11px', padding: '3px 8px', flex: 1 }}
                 >
-                  適用
+                  {t('template.apply')}
                 </button>
                 <button
                   className="btn secondary"
-                  onClick={() => deleteTemplate(t.id)}
+                  onClick={() => deleteTemplate(tmpl.id)}
                   type="button"
                   style={{ fontSize: '11px', padding: '3px 6px' }}
                 >
@@ -150,7 +152,7 @@ export function TemplatePanel({ onLoad, currentSettings }: Props) {
         </div>
       ) : (
         <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '8px' }}>
-          保存済みテンプレートはありません
+          {t('template.empty')}
         </div>
       )}
     </div>

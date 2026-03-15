@@ -25,7 +25,7 @@ export function LangSwitcher({ lang, onChange }: LangSwitcherProps) {
         whiteSpace: 'nowrap',
       }}
     >
-      {lang === 'ja' ? '\ud83c\uddef\ud83c\uddf5 / EN' : '\ud83c\uddec\ud83c\udde7 / JA'}
+      {lang === 'ja' ? 'JA → EN' : 'EN → JA'}
     </button>
   );
 }

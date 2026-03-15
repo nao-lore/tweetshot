@@ -1,5 +1,6 @@
 import { Languages, RotateCcw, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useI18n } from './i18n';
 
 interface Props {
   originalText: string;
@@ -21,6 +22,7 @@ const languages = [
 ] as const;
 
 export function TranslationPanel({ originalText, onTranslate, onReset, isTranslated }: Props) {
+  const { t } = useI18n();
   const [targetLang, setTargetLang] = useState('ja');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +35,11 @@ export function TranslationPanel({ originalText, onTranslate, onReset, isTransla
       const res = await fetch(
         `/api/translate?text=${encodeURIComponent(originalText)}&to=${targetLang}`,
       );
-      if (!res.ok) throw new Error('翻訳に失敗しました');
+      if (!res.ok) throw new Error(t('translate.fail'));
       const data = await res.json();
       onTranslate(data.translated);
     } catch {
-      setError('翻訳に失敗しました。もう一度お試しください。');
+      setError(t('translate.retry'));
     } finally {
       setLoading(false);
     }
@@ -91,7 +93,7 @@ export function TranslationPanel({ originalText, onTranslate, onReset, isTransla
         }}
       >
         {loading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-        翻訳
+        {t('translate.btn')}
       </button>
 
       {isTranslated && (
@@ -111,7 +113,7 @@ export function TranslationPanel({ originalText, onTranslate, onReset, isTransla
           }}
         >
           <RotateCcw size={12} />
-          元に戻す
+          {t('translate.reset')}
         </button>
       )}
 

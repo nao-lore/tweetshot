@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { History, Trash2, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useHistory } from './useHistory';
+import { useI18n } from './i18n';
 
 interface HistoryPanelProps {
   onSelect: (tweetUrl: string) => void;
 }
 
 export function HistoryPanel({ onSelect }: HistoryPanelProps) {
+  const { t } = useI18n();
   const { entries, removeEntry, clearHistory } = useHistory();
   const [open, setOpen] = useState(false);
 
@@ -39,7 +41,7 @@ export function HistoryPanel({ onSelect }: HistoryPanelProps) {
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <History size={14} />
-          履歴 ({entries.length})
+          {t('history.title')} ({entries.length})
         </span>
         {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
@@ -48,7 +50,7 @@ export function HistoryPanel({ onSelect }: HistoryPanelProps) {
         <div style={{ padding: '0 10px 10px' }}>
           {entries.length === 0 ? (
             <p style={{ color: '#666', fontSize: 12, textAlign: 'center', padding: 16 }}>
-              履歴はありません
+              {t('history.empty')}
             </p>
           ) : (
             <>
@@ -96,7 +98,7 @@ export function HistoryPanel({ onSelect }: HistoryPanelProps) {
                         padding: 2,
                         lineHeight: 1,
                       }}
-                      title="削除"
+                      title={t('history.delete')}
                     >
                       <X size={12} />
                     </button>
@@ -153,7 +155,7 @@ export function HistoryPanel({ onSelect }: HistoryPanelProps) {
                 }}
               >
                 <Trash2 size={12} />
-                全削除
+                {t('history.clearAll')}
               </button>
             </>
           )}

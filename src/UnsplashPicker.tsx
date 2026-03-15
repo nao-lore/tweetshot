@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ImageIcon, Search, X, Loader2 } from 'lucide-react';
+import { useI18n } from './i18n';
 
 interface PicsumPhoto {
   id: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [photos, setPhotos] = useState<PicsumPhoto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
       const data: PicsumPhoto[] = await res.json();
       setPhotos(data);
     } catch {
-      setError('画像の取得に失敗しました');
+      setError(t('unsplash.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
         }}
       >
         <ImageIcon size={14} />
-        画像背景
+        {t('unsplash.button')}
       </button>
     );
   }
@@ -88,7 +90,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ color: '#ddd', fontSize: 14, fontWeight: 600 }}>画像背景を選択</span>
+        <span style={{ color: '#ddd', fontSize: 14, fontWeight: 600 }}>{t('unsplash.title')}</span>
         <button
           onClick={() => setOpen(false)}
           style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer' }}
@@ -103,7 +105,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
           type="text"
           value={customUrl}
           onChange={(e) => setCustomUrl(e.target.value)}
-          placeholder="画像URLを貼り付け..."
+          placeholder={t('unsplash.urlPlaceholder')}
           onKeyDown={(e) => e.key === 'Enter' && handleSelectUrl()}
           style={{
             flex: 1,
@@ -127,14 +129,14 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
             cursor: 'pointer',
           }}
         >
-          適用
+          {t('unsplash.apply')}
         </button>
       </div>
 
       {/* Current background indicator */}
       {currentUrl && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <span style={{ color: '#888', fontSize: 12 }}>背景設定済み</span>
+          <span style={{ color: '#888', fontSize: 12 }}>{t('unsplash.active')}</span>
           <button
             onClick={onClear}
             style={{
@@ -147,7 +149,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
               cursor: 'pointer',
             }}
           >
-            解除
+            {t('unsplash.clear')}
           </button>
         </div>
       )}
@@ -171,7 +173,7 @@ export function UnsplashPicker({ onSelect, onClear, currentUrl }: Props) {
           }}
         >
           {loading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Search size={14} />}
-          他の画像を表示
+          {t('unsplash.shuffle')}
         </button>
       </div>
 

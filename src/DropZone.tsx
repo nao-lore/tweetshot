@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useI18n } from './i18n';
 
 interface DropZoneProps {
   onDrop: (url: string) => void;
@@ -13,6 +14,7 @@ function extractUrl(text: string): string | null {
 }
 
 export function DropZone({ onDrop, children }: DropZoneProps) {
+  const { t } = useI18n();
   const [dragging, setDragging] = useState(false);
   const dragCounter = useRef(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -119,7 +121,7 @@ export function DropZone({ onDrop, children }: DropZoneProps) {
             textAlign: 'center',
             padding: 24,
           }}>
-            URLをドロップしてツイートを取得
+            {t('dropzone.hint')}
           </div>
         </div>
       )}

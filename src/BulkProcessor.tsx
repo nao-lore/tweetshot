@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { TweetData } from './types';
 import { parsePostUrl, fetchPost } from './parseUrl';
+import { useI18n } from './i18n';
 
 interface Props {
   onResults: (tweets: TweetData[]) => void;
@@ -43,6 +44,7 @@ async function fetchWithConcurrency(
 }
 
 export function BulkProcessor({ onResults }: Props) {
+  const { t } = useI18n();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -57,7 +59,7 @@ export function BulkProcessor({ onResults }: Props) {
     const validUrls = lines.filter((line) => parsePostUrl(line) !== null);
 
     if (validUrls.length === 0) {
-      setError('有効なURLが見つかりませんでした');
+      setError(t('bulk.noValidUrl'));
       return;
     }
 
@@ -71,12 +73,12 @@ export function BulkProcessor({ onResults }: Props) {
       });
 
       if (tweets.length === 0) {
-        setError('投稿を取得できませんでした');
+        setError(t('bulk.fetchFailed'));
       } else {
         onResults(tweets);
       }
     } catch {
-      setError('一括取得中にエラーが発生しました');
+      setError(t('bulk.error'));
     } finally {
       setLoading(false);
       setProgress(null);
@@ -93,7 +95,7 @@ export function BulkProcessor({ onResults }: Props) {
       gap: '12px',
     }}>
       <label style={{ color: '#aaa', fontSize: '13px' }}>
-        一括取得（1行に1つのURLを入力）
+        {t('bulk.label')}
       </label>
       <textarea
         value={input}
@@ -127,10 +129,10 @@ export function BulkProcessor({ onResults }: Props) {
         {loading ? (
           <>
             <Loader2 size={16} className="spin" />
-            {progress ? `${progress.done}/${progress.total} 取得中...` : '取得中...'}
+            {progress ? `${progress.done}/${progress.total} ${t('bulk.progress')}` : t('bulk.fetching')}
           </>
         ) : (
-          '一括取得'
+          t('bulk.fetchBtn')
         )}
       </button>
     </div>

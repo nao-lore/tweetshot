@@ -405,7 +405,7 @@ export default function App() {
         {viewMode === 'bulk' && tweets.length > 1 && (
           <div className="bulk-results">
             <label style={{ color: '#888', fontSize: 12, marginBottom: 8, display: 'block' }}>
-              {tweets.length}件取得完了
+              {tweets.length}{t('bulk.fetched')}
             </label>
             <div className="bulk-list">
               {tweets.map((tw) => (
@@ -419,7 +419,7 @@ export default function App() {
           </div>
         )}
 
-        {!hasTweet && !loading && (
+        {!hasTweet && !loading && viewMode !== 'bulk' && (
           <div className="no-tweet-placeholder">
             {t('placeholder.noTweet')}
           </div>

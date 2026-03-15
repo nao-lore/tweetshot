@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { useI18n } from './i18n';
 
 interface Props {
   open: boolean;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export function AboutModal({ open, onClose }: Props) {
+  const { t } = useI18n();
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
   }, [onClose]);
@@ -41,12 +43,11 @@ export function AboutModal({ open, onClose }: Props) {
         </h2>
 
         <p style={{ fontSize: 14, lineHeight: 1.8, color: '#aaa', marginBottom: 16 }}>
-          TweetShotは、SNSの投稿を美しい画像に変換するツールです。
-          ブロガー、マーケター、クリエイターのために作られました。
+          {t('about.description')}
         </p>
 
         <p style={{ fontSize: 14, lineHeight: 1.8, color: '#aaa', marginBottom: 16 }}>
-          「シェアしたい言葉を、もっと美しく。」
+          {t('about.tagline')}
         </p>
 
         <div style={{ fontSize: 12, color: '#666', borderTop: '1px solid #333', paddingTop: 12, marginTop: 16 }}>
@@ -59,7 +60,7 @@ export function AboutModal({ open, onClose }: Props) {
           color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer',
           fontSize: 13, fontWeight: 600,
         }}>
-          閉じる
+          {t('about.close')}
         </button>
       </div>
     </div>

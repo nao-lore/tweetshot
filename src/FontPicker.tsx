@@ -41,9 +41,6 @@ export function FontPicker({ selected, onChange }: FontPickerProps) {
 
   return (
     <div>
-      <label style={{ display: 'block', fontSize: '13px', marginBottom: '6px', fontWeight: 500 }}>
-        フォント
-      </label>
       <select
         value={selected}
         onChange={handleChange}

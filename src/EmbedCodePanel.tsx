@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { useI18n } from './i18n';
 
 interface Props {
   tweetUrl: string;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function EmbedCodePanel({ tweetUrl, imageDataUrl }: Props) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   if (!imageDataUrl) {
@@ -18,14 +20,14 @@ export function EmbedCodePanel({ tweetUrl, imageDataUrl }: Props) {
         color: '#888',
         fontSize: 13,
       }}>
-        先に画像を生成してください
+        {t('embed.generateFirst')}
       </div>
     );
   }
 
   const embedCode = `<figure style="max-width:600px;margin:0 auto">
   <img src="${imageDataUrl}" alt="Tweet by @user" style="width:100%;border-radius:12px" />
-  <figcaption><a href="${tweetUrl}">元の投稿を見る</a></figcaption>
+  <figcaption><a href="${tweetUrl}">${t('embed.viewOriginal')}</a></figcaption>
 </figure>`;
 
   async function handleCopy() {
@@ -83,7 +85,7 @@ export function EmbedCodePanel({ tweetUrl, imageDataUrl }: Props) {
         onMouseLeave={e => (e.currentTarget.style.background = '#2a2a2a')}
       >
         {copied ? <Check size={14} color="#4ade80" /> : <Copy size={14} />}
-        {copied ? 'コピー済み' : 'コピー'}
+        {copied ? t('embed.copied') : t('embed.copy')}
       </button>
     </div>
   );

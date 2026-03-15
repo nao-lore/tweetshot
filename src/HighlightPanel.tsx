@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { HighlightRule } from './TextHighlight';
+import { useI18n } from './i18n';
 
 interface HighlightPanelProps {
   rules: HighlightRule[];
@@ -16,6 +17,8 @@ const PRESET_COLORS = [
 ];
 
 export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
+  const { t } = useI18n();
+
   const addRule = useCallback(() => {
     onChange([...rules, { pattern: '', color: PRESET_COLORS[rules.length % PRESET_COLORS.length].value }]);
   }, [rules, onChange]);
@@ -37,7 +40,7 @@ export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
       padding: 12,
     }}>
       <label style={{ color: '#aaa', fontSize: 12, fontWeight: 600, marginBottom: 8, display: 'block' }}>
-        テキストハイライト
+        {t('label.highlight')}
       </label>
 
       {rules.map((rule, i) => (
@@ -121,7 +124,7 @@ export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
               padding: 2,
               lineHeight: 1,
             }}
-            title="削除"
+            title={t('history.delete')}
           >
             <X size={14} />
           </button>
@@ -148,7 +151,7 @@ export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
         }}
       >
         <Plus size={12} />
-        ハイライト追加
+        {t('highlight.add')}
       </button>
     </div>
   );

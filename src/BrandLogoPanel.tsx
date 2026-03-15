@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Upload, Trash2 } from 'lucide-react';
+import { useI18n } from './i18n';
 
 type Position = 'bottom-center' | 'bottom-right' | 'top-right';
 
@@ -13,12 +14,6 @@ interface Props {
   onClear: () => void;
 }
 
-const positionOptions: { id: Position; label: string }[] = [
-  { id: 'bottom-center', label: '下中央' },
-  { id: 'bottom-right', label: '下右' },
-  { id: 'top-right', label: '上右' },
-];
-
 export function BrandLogoPanel({
   logoUrl,
   logoText,
@@ -28,7 +23,14 @@ export function BrandLogoPanel({
   onPosition,
   onClear,
 }: Props) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const positionOptions: { id: Position; label: string }[] = [
+    { id: 'bottom-center', label: t('brand.bottomCenter') },
+    { id: 'bottom-right', label: t('brand.bottomRight') },
+    { id: 'top-right', label: t('brand.topRight') },
+  ];
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -39,7 +41,7 @@ export function BrandLogoPanel({
 
   return (
     <div className="control-section">
-      <label>ブランドロゴ</label>
+      <label>{t('brand.logo')}</label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {/* Logo upload */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -50,7 +52,7 @@ export function BrandLogoPanel({
             style={{ fontSize: 12 }}
           >
             <Upload size={14} />
-            ロゴ画像
+            {t('brand.uploadLogo')}
           </button>
           <input
             ref={fileRef}
@@ -62,7 +64,7 @@ export function BrandLogoPanel({
           {logoUrl && (
             <img
               src={logoUrl}
-              alt="ロゴプレビュー"
+              alt="Logo preview"
               style={{
                 maxHeight: 24,
                 objectFit: 'contain',
@@ -79,7 +81,7 @@ export function BrandLogoPanel({
           type="text"
           value={logoText}
           onChange={(e) => onLogoText(e.target.value)}
-          placeholder="ウォーターマークテキスト"
+          placeholder={t('brand.watermarkText')}
           style={{
             padding: '8px 12px',
             border: '1px solid #333',
@@ -115,7 +117,7 @@ export function BrandLogoPanel({
           style={{ fontSize: 12 }}
         >
           <Trash2 size={14} />
-          リセット
+          {t('brand.reset')}
         </button>
       </div>
     </div>
