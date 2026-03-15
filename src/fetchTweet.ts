@@ -50,7 +50,7 @@ export async function fetchTweet(id: string): Promise<TweetData> {
   // Check if we got valid data
   const text = data.text ?? data.tweet?.text;
   if (!text) {
-    throw new Error('ツイートが見つかりませんでした');
+    throw new Error('ツイートが見つかりませんでした。2023年後半以降のツイートは取得できない場合があります。');
   }
 
   return parseTweetData(data, id);
