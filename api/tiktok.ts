@@ -11,13 +11,13 @@ export default async function handler(req: Request) {
     );
   }
 
-  // URLの基本バリデーション
+  // URLの基本バリデーション（プロトコル付きで厳密チェック）
   if (
-    !tiktokUrl.includes('tiktok.com/') &&
-    !tiktokUrl.includes('vm.tiktok.com/')
+    !/^https?:\/\/(www\.)?tiktok\.com\//.test(tiktokUrl) &&
+    !/^https?:\/\/vm\.tiktok\.com\//.test(tiktokUrl)
   ) {
     return new Response(
-      JSON.stringify({ error: '無効なTikTok URLです' }),
+      JSON.stringify({ error: 'Invalid TikTok URL' }),
       { status: 400, headers: { 'content-type': 'application/json' } },
     );
   }
@@ -39,6 +39,7 @@ export default async function handler(req: Request) {
       headers: {
         'content-type': 'application/json',
         'cache-control': 'public, max-age=300',
+        'x-content-type-options': 'nosniff',
       },
     });
   } catch {

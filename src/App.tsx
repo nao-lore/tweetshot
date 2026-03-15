@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Download, Copy, Check, Loader2, Sun, Moon, Layers, ListOrdered } from 'lucide-react';
 import type { TweetData, Background, ExportFormat } from './types';
 import { sizePresets } from './types';
@@ -18,24 +18,30 @@ import { BrandLogoPanel } from './BrandLogoPanel';
 import { useBrandLogo } from './useBrandLogo';
 import { TranslationPanel } from './TranslationPanel';
 import { useTranslation } from './useTranslation';
-import { UnsplashPicker } from './UnsplashPicker';
 import { type CardLayout, cardLayouts } from './CardLayouts';
 import { FontPicker, fontOptions } from './FontPicker';
 import { ShareButtons } from './ShareButtons';
-import { EmbedCodePanel } from './EmbedCodePanel';
 import { QRCode } from './QRCode';
 import { DropZone } from './DropZone';
 import { useHistory } from './useHistory';
-import { HistoryPanel } from './HistoryPanel';
 import { HighlightPanel } from './HighlightPanel';
 import type { HighlightRule } from './TextHighlight';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
-import { ShortcutsHelp } from './ShortcutsHelp';
 import { useI18n } from './i18n';
 import { LangSwitcher } from './LangSwitcher';
 import { exportFormatOptions } from './exportFormats';
 import { TransparencyPreview } from './TransparentBg';
 import { AccordionSection } from './AccordionSection';
+import { LoadingSkeleton } from './LoadingSkeleton';
+import { Toast } from './Toast';
+import { useStats } from './useStats';
+import { StatsPanel } from './StatsPanel';
+
+// Lazy-loaded components (conditionally rendered)
+const HistoryPanel = lazy(() => import('./HistoryPanel').then(m => ({ default: m.HistoryPanel })));
+const EmbedCodePanel = lazy(() => import('./EmbedCodePanel').then(m => ({ default: m.EmbedCodePanel })));
+const UnsplashPicker = lazy(() => import('./UnsplashPicker').then(m => ({ default: m.UnsplashPicker })));
+const ShortcutsHelp = lazy(() => import('./ShortcutsHelp').then(m => ({ default: m.ShortcutsHelp })));
 
 type ViewMode = 'single' | 'thread' | 'bulk';
 
@@ -87,6 +93,10 @@ export default function App() {
   // History
   const history = useHistory();
 
+  // Stats / Gamification
+  const stats = useStats();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   // Embed data
   const [embedDataUrl, setEmbedDataUrl] = useState<string | null>(null);
 
@@ -94,14 +104,24 @@ export default function App() {
   const { download, copyToClipboard, getDataUrl } = useScreenshot(cardRef, pixelRatio);
 
   // Keyboard shortcuts
-  const handleDownload = useCallback(() => {
-    if (tweet) download(`tweetshot-${tweet.id}.png`, exportFormat, transparentBg);
-  }, [tweet, download, exportFormat, transparentBg]);
+  const handleDownload = useCallback(async () => {
+    if (!tweet) return;
+    const ok = await download(`tweetshot-${tweet.id}.png`, exportFormat, transparentBg);
+    if (ok) {
+      stats.trackExport();
+      setToastMessage('ダウンロード完了');
+    }
+  }, [tweet, download, exportFormat, transparentBg, stats]);
 
   const handleCopyShortcut = useCallback(async () => {
     const ok = await copyToClipboard();
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); }
-  }, [copyToClipboard]);
+    if (ok) {
+      setCopied(true);
+      stats.trackCopy();
+      setToastMessage('クリップボードにコピーしました');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [copyToClipboard, stats]);
 
   const { showHelp, setShowHelp } = useKeyboardShortcuts({
     download: handleDownload,
@@ -109,6 +129,11 @@ export default function App() {
     toggleTheme: () => setCardTheme(prev => prev === 'light' ? 'dark' : 'light'),
     generate: () => { if (url.trim()) handleGenerate(); },
   }, true);
+
+  // Reset transient state when viewMode changes
+  useEffect(() => {
+    setDisplayText(null);
+  }, [viewMode]);
 
   // Handle URL params (from browser extension)
   useEffect(() => {
@@ -156,6 +181,8 @@ export default function App() {
     const ok = await copyToClipboard();
     if (ok) {
       setCopied(true);
+      stats.trackCopy();
+      setToastMessage('クリップボードにコピーしました');
       setTimeout(() => setCopied(false), 2000);
     }
   }
@@ -166,10 +193,13 @@ export default function App() {
 
   function handleBulkResults(results: TweetData[]) {
     setTweets(results);
-    if (results.length > 0) setTweet(results[0]);
+    if (results.length > 0) {
+      setTweet(results[0]);
+      stats.trackTweets(results.length);
+    }
   }
 
-  function handleTranslate(translated: string) { setDisplayText(translated); }
+  function handleTranslate(translated: string) { setDisplayText(translated); stats.trackTranslation(); }
   function handleResetTranslation() { setDisplayText(null); resetTranslation(); }
 
   function handleDrop(droppedUrl: string) {
@@ -211,12 +241,18 @@ export default function App() {
     setSizePreset(settings.sizePreset);
     setPixelRatio(settings.pixelRatio);
     setExportFormat(settings.exportFormat);
+    setLayout(settings.layout);
+    setFontId(settings.fontId);
+    setFontFamily(settings.fontFamily);
+    setShowQR(settings.showQR);
+    setTransparentBg(settings.transparentBg);
   }
 
   const currentSettings: TemplateSettings = {
     background, cardTheme, padding, shadow, borderRadius,
     showMetrics, showWatermark, border, borderColor,
     sizePreset, pixelRatio, exportFormat,
+    layout, fontId, fontFamily, showQR, transparentBg,
   };
 
   const previewScale = useMemo(() => {
@@ -248,6 +284,9 @@ export default function App() {
             border={border}
             borderColor={borderColor}
             sizePreset={sizePreset}
+            imageBackground={imageBackground}
+            transparentBg={transparentBg}
+            fontFamily={fontFamily}
           />
         ) : (
           <TweetCard
@@ -327,6 +366,12 @@ export default function App() {
 
         {error && <div className="error-box">{error}</div>}
 
+        {loading && (
+          <div className="preview-container">
+            <LoadingSkeleton />
+          </div>
+        )}
+
         {/* Bulk results selector */}
         {viewMode === 'bulk' && tweets.length > 1 && (
           <div className="bulk-results">
@@ -381,11 +426,13 @@ export default function App() {
                     onCustomColorChange={setCustomColor}
                   />
                   <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <UnsplashPicker
-                      onSelect={(u) => { setImageBackground(u); setTransparentBg(false); }}
-                      onClear={() => setImageBackground(null)}
-                      currentUrl={imageBackground}
-                    />
+                    <Suspense fallback={null}>
+                      <UnsplashPicker
+                        onSelect={(u) => { setImageBackground(u); setTransparentBg(false); }}
+                        onClear={() => setImageBackground(null)}
+                        currentUrl={imageBackground}
+                      />
+                    </Suspense>
                     <button
                       className={`btn icon-toggle ${transparentBg ? 'active-toggle' : ''}`}
                       onClick={() => { setTransparentBg(!transparentBg); if (!transparentBg) setImageBackground(null); }}
@@ -556,7 +603,9 @@ export default function App() {
 
                 <div className="control-section">
                   <label>{t('label.embed')}</label>
-                  <EmbedCodePanel tweetUrl={url} imageDataUrl={embedDataUrl} />
+                  <Suspense fallback={null}>
+                    <EmbedCodePanel tweetUrl={url} imageDataUrl={embedDataUrl} />
+                  </Suspense>
                 </div>
               </AccordionSection>
 
@@ -567,14 +616,28 @@ export default function App() {
         )}
 
         {/* History */}
-        <HistoryPanel onSelect={handleHistorySelect} />
+        <Suspense fallback={null}>
+          <HistoryPanel onSelect={handleHistorySelect} />
+        </Suspense>
+
+        {/* Stats / Gamification */}
+        <StatsPanel stats={stats.stats} badges={stats.badges} />
 
         <footer>
           <p>{t('footer.text')}</p>
         </footer>
       </div>
 
-      <ShortcutsHelp open={showHelp} onClose={() => setShowHelp(false)} />
+      {toastMessage && (
+        <Toast message={toastMessage} onDone={() => setToastMessage(null)} />
+      )}
+      {stats.newBadge && (
+        <Toast message={`🏆 バッジ獲得: ${stats.newBadge}`} duration={3000} onDone={stats.clearNewBadge} />
+      )}
+
+      <Suspense fallback={null}>
+        <ShortcutsHelp open={showHelp} onClose={() => setShowHelp(false)} />
+      </Suspense>
     </DropZone>
   );
 }

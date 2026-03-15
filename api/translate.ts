@@ -5,9 +5,9 @@ export default async function handler(req: Request) {
   const text = url.searchParams.get('text');
   const to = url.searchParams.get('to');
 
-  if (!text || !to) {
+  if (!text || text.length > 5000 || !to) {
     return new Response(
-      JSON.stringify({ error: 'パラメータが不足しています（text, to）' }),
+      JSON.stringify({ error: 'Invalid parameters' }),
       { status: 400, headers: { 'content-type': 'application/json' } },
     );
   }
@@ -57,6 +57,7 @@ export default async function handler(req: Request) {
         headers: {
           'content-type': 'application/json',
           'cache-control': 'public, max-age=3600',
+          'x-content-type-options': 'nosniff',
         },
       },
     );

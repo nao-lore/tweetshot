@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# TweetShot
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ツイートを美しい画像に変換するWebアプリ。Twitter・Bluesky・TikTok対応。
 
-Currently, two official plugins are available:
+Turn tweets into beautiful images. Supports Twitter, Bluesky, and TikTok.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **マルチプラットフォーム**: Twitter/X, Bluesky, TikTok対応
+- **スレッド対応**: ツイートスレッドを1枚の画像に
+- **一括処理**: 複数URLを同時に画像化
+- **10種以上の背景**: グラデーション、パターン、カスタムカラー、画像背景
+- **4つのカードレイアウト**: デフォルト、ミニマル、新聞風、引用カード
+- **8種のフォント**: Google Fonts対応
+- **デバイスモックアップ**: iPhone, Android, MacBook, iPad
+- **AI翻訳**: 9言語対応
+- **テキストハイライト**: キーワード色付け強調
+- **QRコード埋込**
+- **ブランドロゴ**: カスタムウォーターマーク
+- **テンプレート**: スタイル設定の保存/読込
+- **4フォーマット出力**: PNG, SVG, JPEG, WebP
+- **透過背景対応**
+- **Chrome拡張機能**
+- **キーボードショートカット**
+- **日本語/英語UI**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:5173
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview
 ```
+
+## Deploy
+
+Vercel対応。`vercel.json`設定済み。
+
+```bash
+vercel
+```
+
+## Tech Stack
+
+- React 19 + TypeScript
+- Vite 8
+- html-to-image
+- Vercel Edge Functions
+- lucide-react
+
+## Chrome Extension
+
+`extension/` ディレクトリをChromeの `chrome://extensions` で「パッケージ化されていない拡張機能を読み込む」。
+
+## License
+
+MIT

@@ -7,9 +7,9 @@ export default async function handler(req: Request) {
   const handle = url.searchParams.get('handle');
   const rkey = url.searchParams.get('rkey');
 
-  if (!handle || !rkey) {
+  if (!handle || !rkey || !/^[\w.-]+$/.test(handle) || !/^[a-zA-Z0-9]+$/.test(rkey)) {
     return new Response(
-      JSON.stringify({ error: 'handleとrkeyは必須パラメータです' }),
+      JSON.stringify({ error: 'Invalid parameters' }),
       { status: 400, headers: { 'content-type': 'application/json' } },
     );
   }
@@ -47,6 +47,7 @@ export default async function handler(req: Request) {
       headers: {
         'content-type': 'application/json',
         'cache-control': 'public, max-age=300',
+        'x-content-type-options': 'nosniff',
       },
     });
   } catch {

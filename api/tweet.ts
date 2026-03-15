@@ -32,6 +32,7 @@ export default async function handler(req: Request) {
       headers: {
         'content-type': 'application/json',
         'cache-control': 'public, max-age=300',
+        'x-content-type-options': 'nosniff',
       },
     });
   } catch {

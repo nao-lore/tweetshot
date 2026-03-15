@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Background, SizePreset, ExportFormat } from './types';
+import type { CardLayout } from './CardLayouts';
 
 export interface TemplateSettings {
   background: Background;
@@ -14,6 +15,11 @@ export interface TemplateSettings {
   sizePreset: SizePreset;
   pixelRatio: number;
   exportFormat: ExportFormat;
+  layout: CardLayout;
+  fontId: string;
+  fontFamily: string;
+  showQR: boolean;
+  transparentBg: boolean;
 }
 
 export interface StyleTemplate {

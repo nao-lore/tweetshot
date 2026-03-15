@@ -15,6 +15,9 @@ interface Props {
   border: boolean;
   borderColor: string;
   sizePreset: SizePreset;
+  imageBackground?: string | null;
+  transparentBg?: boolean;
+  fontFamily?: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -39,14 +42,18 @@ function formatCount(n: number): string {
 }
 
 export const ThreadView = forwardRef<HTMLDivElement, Props>(
-  ({ tweets, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset }, ref) => {
+  ({ tweets, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset, imageBackground, transparentBg, fontFamily }, ref) => {
     const isDark = cardTheme === 'dark';
     const bgSize = patternBackgroundSizes[background.id];
 
     const wrapperStyle: React.CSSProperties = {
-      background: background.style,
+      background: transparentBg
+        ? 'transparent'
+        : imageBackground
+          ? `url(${imageBackground}) center/cover`
+          : background.style,
       padding: `${padding}px`,
-      ...(bgSize && {
+      ...(bgSize && !imageBackground && !transparentBg && {
         backgroundSize: bgSize,
         backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
       }),
@@ -69,7 +76,7 @@ export const ThreadView = forwardRef<HTMLDivElement, Props>(
         className="tweet-shot-wrapper"
         style={wrapperStyle}
       >
-        <div className={`tweet-card ${isDark ? 'dark' : ''}`} style={cardStyle}>
+        <div className={`tweet-card ${isDark ? 'dark' : ''}`} style={{ ...cardStyle, ...(fontFamily && { fontFamily }) }}>
           {tweets.map((tweet, index) => {
             const isLast = index === tweets.length - 1;
 

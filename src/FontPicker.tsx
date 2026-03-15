@@ -47,15 +47,7 @@ export function FontPicker({ selected, onChange }: FontPickerProps) {
       <select
         value={selected}
         onChange={handleChange}
-        style={{
-          width: '100%',
-          padding: '6px 8px',
-          borderRadius: '6px',
-          border: '1px solid #d1d5db',
-          fontSize: '14px',
-          backgroundColor: '#fff',
-          cursor: 'pointer',
-        }}
+        className="select-input"
       >
         {fontOptions.map((font) => (
           <option
