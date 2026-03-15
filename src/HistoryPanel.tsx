@@ -114,6 +114,11 @@ export function HistoryPanel({ onSelect }: HistoryPanelProps) {
                           borderRadius: 4,
                           marginBottom: 6,
                         }}
+                        onError={(e) => {
+                          const el = e.currentTarget;
+                          el.onerror = null;
+                          el.style.display = 'none';
+                        }}
                       />
                     )}
 

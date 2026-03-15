@@ -37,7 +37,13 @@ export function TranslationPanel({ originalText, onTranslate, onReset, isTransla
       );
       if (!res.ok) throw new Error(t('translate.fail'));
       const data = await res.json();
-      onTranslate(data.translated);
+      const translated = typeof data.translated === 'string'
+        ? data.translated
+        : Array.isArray(data) && Array.isArray(data[0])
+          ? data[0].map((s: string[]) => s[0]).join('')
+          : null;
+      if (!translated) throw new Error(t('translate.fail'));
+      onTranslate(translated);
     } catch {
       setError(t('translate.retry'));
     } finally {

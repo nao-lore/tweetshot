@@ -8,7 +8,7 @@ interface Props {
 const COLORS = ['#667eea', '#f5576c', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
 
 export function Confetti({ active, onDone }: Props) {
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; color: string; delay: number; size: number }>>([]);
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; color: string; delay: number; size: number; rotation: number }>>([]);
 
   useEffect(() => {
     if (!active) return;
@@ -18,6 +18,7 @@ export function Confetti({ active, onDone }: Props) {
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
       delay: Math.random() * 0.5,
       size: 4 + Math.random() * 6,
+      rotation: 360 + Math.random() * 720,
     }));
     setParticles(newParticles);
     const timer = setTimeout(() => {
@@ -48,6 +49,7 @@ export function Confetti({ active, onDone }: Props) {
             height: p.size,
             backgroundColor: p.color,
             borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            ['--confetti-rotation' as string]: `${p.rotation}deg`,
             animation: `confettiFall ${1.5 + Math.random()}s ease-in ${p.delay}s forwards`,
           }}
         />
@@ -55,7 +57,7 @@ export function Confetti({ active, onDone }: Props) {
       <style>{`
         @keyframes confettiFall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(100vh) rotate(${360 + Math.random() * 360}deg); opacity: 0; }
+          100% { transform: translateY(100vh) rotate(var(--confetti-rotation)); opacity: 0; }
         }
       `}</style>
     </div>

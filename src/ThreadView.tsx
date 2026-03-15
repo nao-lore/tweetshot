@@ -143,7 +143,7 @@ export const ThreadView = forwardRef<HTMLDivElement, Props>(
                   {tweet.mediaUrl && (
                     <img
                       src={tweet.mediaUrl}
-                      alt=""
+                      alt="メディア"
                       className="tweet-media"
                       crossOrigin="anonymous"
                       style={{ marginLeft: '52px', width: 'calc(100% - 52px)' }}

@@ -23,8 +23,14 @@ export function useTranslation(originalText: string) {
         );
         if (!res.ok) throw new Error('翻訳に失敗しました');
         const data = await res.json();
-        cacheRef.current.set(cacheKey, data.translated);
-        setTranslatedText(data.translated);
+        const translated = typeof data.translated === 'string'
+          ? data.translated
+          : Array.isArray(data) && Array.isArray(data[0])
+            ? data[0].map((s: string[]) => s[0]).join('')
+            : null;
+        if (!translated) throw new Error('翻訳に失敗しました');
+        cacheRef.current.set(cacheKey, translated);
+        setTranslatedText(translated);
       } catch {
         throw new Error('翻訳に失敗しました');
       } finally {

@@ -35,9 +35,20 @@ export async function fetchBlueskyPost(url: string): Promise<TweetData> {
 
   const [, handle, rkey] = match;
 
-  // Use the proxy endpoint (works both in dev and on Vercel)
-  const proxyUrl = `/api/bluesky?handle=${encodeURIComponent(handle)}&rkey=${encodeURIComponent(rkey)}`;
-  const res = await fetch(proxyUrl);
+  // Step 1: Resolve handle to DID via Bluesky public API (CORS enabled)
+  const resolveRes = await fetch(
+    `https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
+  );
+  if (!resolveRes.ok) {
+    throw new Error('Blueskyハンドルを解決できませんでした');
+  }
+  const { did } = (await resolveRes.json()) as { did: string };
+
+  // Step 2: Fetch post thread using the resolved DID
+  const threadUri = `at://${did}/app.bsky.feed.post/${rkey}`;
+  const res = await fetch(
+    `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(threadUri)}&depth=0`,
+  );
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

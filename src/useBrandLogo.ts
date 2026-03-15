@@ -51,6 +51,9 @@ export function useBrandLogo() {
     reader.onload = () => {
       setState((prev) => ({ ...prev, logoUrl: reader.result as string }));
     };
+    reader.onerror = () => {
+      console.error('Failed to read logo file');
+    };
     reader.readAsDataURL(file);
   }, []);
 
