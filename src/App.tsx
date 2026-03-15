@@ -34,15 +34,12 @@ import { TransparencyPreview } from './TransparentBg';
 import { AccordionSection } from './AccordionSection';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { Toast } from './Toast';
-import { useStats } from './useStats';
-import { StatsPanel } from './StatsPanel';
 import { useUrlStatus } from './useOptimistic';
 import { usePrefetch } from './usePrefetch';
 import { useEasterEggs } from './useEasterEggs';
 import { Confetti } from './Confetti';
 import { useReducedMotion } from './useReducedMotion';
 import { SkipToContent } from './SkipToContent';
-import { GreenFootprint } from './GreenFootprint';
 import { AboutModal } from './AboutModal';
 
 // Lazy-loaded components (conditionally rendered)
@@ -101,8 +98,6 @@ export default function App() {
   // History
   const history = useHistory();
 
-  // Stats / Gamification
-  const stats = useStats();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Embed data
@@ -133,20 +128,18 @@ export default function App() {
     if (!tweet) return;
     const ok = await download(`tweetshot-${tweet.id}.png`, exportFormat, transparentBg);
     if (ok) {
-      stats.trackExport();
       setToastMessage('ダウンロード完了');
     }
-  }, [tweet, download, exportFormat, transparentBg, stats]);
+  }, [tweet, download, exportFormat, transparentBg]);
 
   const handleCopyShortcut = useCallback(async () => {
     const ok = await copyToClipboard();
     if (ok) {
       setCopied(true);
-      stats.trackCopy();
       setToastMessage('クリップボードにコピーしました');
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [copyToClipboard, stats]);
+  }, [copyToClipboard]);
 
   const { showHelp, setShowHelp } = useKeyboardShortcuts({
     download: handleDownload,
@@ -182,7 +175,6 @@ export default function App() {
     if (cached && viewMode === 'single') {
       setTweet(cached);
       setTweets([cached]);
-      stats.trackTweets(1);
       return;
     }
 
@@ -215,7 +207,6 @@ export default function App() {
     const ok = await copyToClipboard();
     if (ok) {
       setCopied(true);
-      stats.trackCopy();
       setToastMessage('クリップボードにコピーしました');
       setTimeout(() => setCopied(false), 2000);
     }
@@ -227,13 +218,10 @@ export default function App() {
 
   function handleBulkResults(results: TweetData[]) {
     setTweets(results);
-    if (results.length > 0) {
-      setTweet(results[0]);
-      stats.trackTweets(results.length);
-    }
+    if (results.length > 0) setTweet(results[0]);
   }
 
-  function handleTranslate(translated: string) { setDisplayText(translated); stats.trackTranslation(); }
+  function handleTranslate(translated: string) { setDisplayText(translated); }
   function handleResetTranslation() { setDisplayText(null); resetTranslation(); }
 
   function handleDrop(droppedUrl: string) {
@@ -661,12 +649,8 @@ export default function App() {
           <HistoryPanel onSelect={handleHistorySelect} />
         </Suspense>
 
-        {/* Stats / Gamification */}
-        <StatsPanel stats={stats.stats} badges={stats.badges} />
-
         <footer id="main-content">
           <p>{t('footer.text')}</p>
-          <GreenFootprint exportCount={stats.stats.totalExports} />
         </footer>
       </div>
 
@@ -676,10 +660,6 @@ export default function App() {
       {toastMessage && (
         <Toast message={toastMessage} onDone={() => setToastMessage(null)} />
       )}
-      {stats.newBadge && (
-        <Toast message={`🏆 バッジ獲得: ${stats.newBadge}`} duration={3000} onDone={stats.clearNewBadge} />
-      )}
-
       <Suspense fallback={null}>
         <ShortcutsHelp open={showHelp} onClose={() => setShowHelp(false)} />
       </Suspense>
