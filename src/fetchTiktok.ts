@@ -55,7 +55,7 @@ export async function fetchTiktokPost(url: string): Promise<TweetData> {
     },
     favoriteCount: 0,
     conversationCount: 0,
-    createdAt: new Date().toISOString(),
+    createdAt: '',
     ...(data.thumbnail_url ? { mediaUrl: data.thumbnail_url } : {}),
   };
 }

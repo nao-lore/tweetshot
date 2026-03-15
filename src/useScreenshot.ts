@@ -4,16 +4,22 @@ import type { ExportFormat } from './types';
 import { exportToFormat } from './exportFormats';
 
 export function useScreenshot(ref: RefObject<HTMLDivElement | null>, pixelRatio = 2) {
-  const download = useCallback(async (filename = 'tweetshot.png', format: ExportFormat = 'png', transparentBg = false) => {
-    if (!ref.current) return;
-    const ext = format === 'jpeg' ? '.jpg' : format === 'webp' ? '.webp' : format === 'svg' ? '.svg' : '.png';
-    const finalFilename = filename.replace(/\.\w+$/, ext);
-    const bgColor = transparentBg ? 'transparent' : undefined;
-    const { dataUrl } = await exportToFormat(ref.current, format, pixelRatio, bgColor);
-    const link = document.createElement('a');
-    link.download = finalFilename;
-    link.href = dataUrl;
-    link.click();
+  const download = useCallback(async (filename = 'tweetshot.png', format: ExportFormat = 'png', transparentBg = false): Promise<boolean> => {
+    if (!ref.current) return false;
+    try {
+      const ext = format === 'jpeg' ? '.jpg' : format === 'webp' ? '.webp' : format === 'svg' ? '.svg' : '.png';
+      const finalFilename = filename.replace(/\.\w+$/, ext);
+      const bgColor = transparentBg ? 'transparent' : undefined;
+      const { dataUrl } = await exportToFormat(ref.current, format, pixelRatio, bgColor);
+      const link = document.createElement('a');
+      link.download = finalFilename;
+      link.href = dataUrl;
+      link.click();
+      return true;
+    } catch (err) {
+      console.error('Export failed:', err);
+      return false;
+    }
   }, [ref, pixelRatio]);
 
   const copyToClipboard = useCallback(async (): Promise<boolean> => {

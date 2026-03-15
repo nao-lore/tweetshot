@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build / cache
+.vercel
+coverage/
+.turbo/
+*.tsbuildinfo

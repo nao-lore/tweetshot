@@ -35,6 +35,7 @@ import { useI18n } from './i18n';
 import { LangSwitcher } from './LangSwitcher';
 import { exportFormatOptions } from './exportFormats';
 import { TransparencyPreview } from './TransparentBg';
+import { AccordionSection } from './AccordionSection';
 
 type ViewMode = 'single' | 'thread' | 'bulk';
 
@@ -341,6 +342,12 @@ export default function App() {
           </div>
         )}
 
+        {!hasTweet && !loading && (
+          <div className="no-tweet-placeholder">
+            {t('placeholder.noTweet')}
+          </div>
+        )}
+
         {hasTweet && (
           <>
             {/* Translation */}
@@ -360,192 +367,198 @@ export default function App() {
             </div>
 
             <div className="controls">
-              {/* Background */}
-              <div className="control-section">
-                <label>{t('label.background')}</label>
-                <BackgroundPicker
-                  selected={transparentBg ? '' : background.id}
-                  onChange={(bg) => { setBackground(bg); setImageBackground(null); setTransparentBg(false); }}
-                  customColor={customColor}
-                  onCustomColorChange={setCustomColor}
-                />
-                <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <UnsplashPicker
-                    onSelect={(u) => { setImageBackground(u); setTransparentBg(false); }}
-                    onClear={() => setImageBackground(null)}
-                    currentUrl={imageBackground}
+              {/* 1. Basic Settings */}
+              <AccordionSection title={t('accordion.basic')} defaultOpen>
+                <div className="control-section">
+                  <label>{t('label.background')}</label>
+                  <BackgroundPicker
+                    selected={transparentBg ? '' : background.id}
+                    onChange={(bg) => { setBackground(bg); setImageBackground(null); setTransparentBg(false); }}
+                    customColor={customColor}
+                    onCustomColorChange={setCustomColor}
                   />
-                  <button
-                    className={`btn icon-toggle ${transparentBg ? 'active-toggle' : ''}`}
-                    onClick={() => { setTransparentBg(!transparentBg); if (!transparentBg) setImageBackground(null); }}
-                    type="button"
-                    style={{ fontSize: 12, padding: '4px 10px' }}
-                  >
-                    {t('transparent')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Theme + Padding */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>{t('label.theme')}</label>
-                  <button className="btn icon-toggle" onClick={() => setCardTheme(cardTheme === 'light' ? 'dark' : 'light')} type="button">
-                    {cardTheme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
-                    {cardTheme === 'light' ? t('theme.light') : t('theme.dark')}
-                  </button>
-                </div>
-                <div className="control-section">
-                  <label>{t('label.padding')}</label>
-                  <input type="range" min={16} max={80} value={padding} onChange={(e) => setPadding(Number(e.target.value))} />
-                </div>
-              </div>
-
-              {/* Shadow + Radius */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>{t('label.shadow')}</label>
-                  <input type="range" min={0} max={20} value={shadow} onChange={(e) => setShadow(Number(e.target.value))} />
-                </div>
-                <div className="control-section">
-                  <label>{t('label.borderRadius')}</label>
-                  <input type="range" min={0} max={24} value={borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
-                </div>
-              </div>
-
-              {/* Border + Metrics + Watermark */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>{t('label.border')}</label>
-                  <div className="toggle-with-color">
-                    <button className={`btn icon-toggle ${border ? 'active-toggle' : ''}`} onClick={() => setBorder(!border)} type="button">
-                      {border ? 'ON' : 'OFF'}
+                  <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <UnsplashPicker
+                      onSelect={(u) => { setImageBackground(u); setTransparentBg(false); }}
+                      onClear={() => setImageBackground(null)}
+                      currentUrl={imageBackground}
+                    />
+                    <button
+                      className={`btn icon-toggle ${transparentBg ? 'active-toggle' : ''}`}
+                      onClick={() => { setTransparentBg(!transparentBg); if (!transparentBg) setImageBackground(null); }}
+                      type="button"
+                      style={{ fontSize: 12, padding: '4px 10px' }}
+                    >
+                      {t('transparent')}
                     </button>
-                    {border && <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} className="color-input-small" />}
                   </div>
                 </div>
-                <div className="control-section">
-                  <label>{t('label.metrics')}</label>
-                  <button className={`btn icon-toggle ${showMetrics ? 'active-toggle' : ''}`} onClick={() => setShowMetrics(!showMetrics)} type="button">
-                    {showMetrics ? t('show') : t('hide')}
-                  </button>
-                </div>
-                <div className="control-section">
-                  <label>{t('label.watermark')}</label>
-                  <button className={`btn icon-toggle ${showWatermark ? 'active-toggle' : ''}`} onClick={() => setShowWatermark(!showWatermark)} type="button">
-                    {showWatermark ? t('show') : t('hide')}
-                  </button>
-                </div>
-              </div>
 
-              {/* Layout + Font */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>{t('label.layout')}</label>
-                  <select value={layout} onChange={(e) => setLayout(e.target.value as CardLayout)} className="select-input">
-                    {cardLayouts.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
-                  </select>
-                </div>
-                <div className="control-section">
-                  <label>{t('label.font')}</label>
-                  <FontPicker selected={fontId} onChange={(id, family) => { setFontId(id); setFontFamily(family); }} />
-                </div>
-              </div>
-
-              {/* Size + Resolution + Format */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>{t('label.size')}</label>
-                  <select value={sizePreset.id} onChange={(e) => setSizePreset(sizePresets.find(p => p.id === e.target.value) ?? sizePresets[0])} className="select-input">
-                    {sizePresets.map(p => <option key={p.id} value={p.id}>{p.label}{p.width ? ` (${p.width}×${p.height})` : ''}</option>)}
-                  </select>
-                </div>
-                <div className="control-section">
-                  <label>{t('label.resolution')}</label>
-                  <select value={pixelRatio} onChange={(e) => setPixelRatio(Number(e.target.value))} className="select-input">
-                    <option value={1}>1x</option>
-                    <option value={2}>2x</option>
-                    <option value={4}>4x</option>
-                  </select>
-                </div>
-                <div className="control-section">
-                  <label>{t('label.format')}</label>
-                  <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value as ExportFormat)} className="select-input">
-                    {exportFormatOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* QR Code toggle */}
-              <div className="control-row">
-                <div className="control-section">
-                  <label>QRコード</label>
-                  <button className={`btn icon-toggle ${showQR ? 'active-toggle' : ''}`} onClick={() => setShowQR(!showQR)} type="button">
-                    {showQR ? t('show') : t('hide')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Device mockup */}
-              <div className="control-section">
-                <label>{t('label.device')}</label>
-                <div className="device-selector">
-                  {deviceOptions.map(d => (
-                    <button key={d.id} className={`btn icon-toggle ${device === d.id ? 'active-toggle' : ''}`}
-                      onClick={() => setDevice(d.id)} type="button" style={{ fontSize: 12, padding: '6px 12px' }}>
-                      {d.label}
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.theme')}</label>
+                    <button className="btn icon-toggle" onClick={() => setCardTheme(cardTheme === 'light' ? 'dark' : 'light')} type="button">
+                      {cardTheme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+                      {cardTheme === 'light' ? t('theme.light') : t('theme.dark')}
                     </button>
-                  ))}
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.padding')}</label>
+                    <input type="range" min={16} max={80} value={padding} onChange={(e) => setPadding(Number(e.target.value))} />
+                  </div>
                 </div>
-              </div>
+              </AccordionSection>
 
-              {/* Highlight */}
-              <div className="control-section">
-                <label>{t('label.highlight')}</label>
-                <HighlightPanel rules={highlights} onChange={setHighlights} />
-              </div>
+              {/* 2. Card Style */}
+              <AccordionSection title={t('accordion.cardStyle')}>
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.shadow')}</label>
+                    <input type="range" min={0} max={20} value={shadow} onChange={(e) => setShadow(Number(e.target.value))} />
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.borderRadius')}</label>
+                    <input type="range" min={0} max={24} value={borderRadius} onChange={(e) => setBorderRadius(Number(e.target.value))} />
+                  </div>
+                </div>
 
-              {/* Brand logo */}
-              <BrandLogoPanel
-                logoUrl={brandLogo.logoUrl}
-                logoText={brandLogo.logoText}
-                position={brandLogo.position}
-                onLogoFile={brandLogo.setLogoFile}
-                onLogoText={brandLogo.setLogoText}
-                onPosition={brandLogo.setPosition}
-                onClear={brandLogo.clearLogo}
-              />
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.border')}</label>
+                    <div className="toggle-with-color">
+                      <button className={`btn icon-toggle ${border ? 'active-toggle' : ''}`} onClick={() => setBorder(!border)} type="button">
+                        {border ? 'ON' : 'OFF'}
+                      </button>
+                      {border && <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} className="color-input-small" />}
+                    </div>
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.metrics')}</label>
+                    <button className={`btn icon-toggle ${showMetrics ? 'active-toggle' : ''}`} onClick={() => setShowMetrics(!showMetrics)} type="button">
+                      {showMetrics ? t('show') : t('hide')}
+                    </button>
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.watermark')}</label>
+                    <button className={`btn icon-toggle ${showWatermark ? 'active-toggle' : ''}`} onClick={() => setShowWatermark(!showWatermark)} type="button">
+                      {showWatermark ? t('show') : t('hide')}
+                    </button>
+                  </div>
+                </div>
+              </AccordionSection>
 
-              {/* Templates */}
-              <TemplatePanel onLoad={loadTemplateSettings} currentSettings={currentSettings} />
+              {/* 3. Layout */}
+              <AccordionSection title={t('accordion.layout')}>
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.layout')}</label>
+                    <select value={layout} onChange={(e) => setLayout(e.target.value as CardLayout)} className="select-input">
+                      {cardLayouts.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.font')}</label>
+                    <FontPicker selected={fontId} onChange={(id, family) => { setFontId(id); setFontFamily(family); }} />
+                  </div>
+                </div>
+              </AccordionSection>
 
-              {/* Action buttons */}
-              <div className="action-buttons">
-                <button className="btn primary" onClick={handleDownload} type="button">
-                  <Download size={16} /> {t('btn.download')} ({exportFormatOptions.find(f => f.id === exportFormat)?.label})
-                </button>
-                <button className="btn secondary" onClick={handleCopy} type="button">
-                  {copied ? <><Check size={16} /> {t('btn.copied')}</> : <><Copy size={16} /> {t('btn.copy')}</>}
-                </button>
-              </div>
+              {/* 4. Export */}
+              <AccordionSection title={t('accordion.export')} defaultOpen>
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.size')}</label>
+                    <select value={sizePreset.id} onChange={(e) => setSizePreset(sizePresets.find(p => p.id === e.target.value) ?? sizePresets[0])} className="select-input">
+                      {sizePresets.map(p => <option key={p.id} value={p.id}>{p.label}{p.width ? ` (${p.width}×${p.height})` : ''}</option>)}
+                    </select>
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.resolution')}</label>
+                    <select value={pixelRatio} onChange={(e) => setPixelRatio(Number(e.target.value))} className="select-input">
+                      <option value={1}>1x</option>
+                      <option value={2}>2x</option>
+                      <option value={4}>4x</option>
+                    </select>
+                  </div>
+                  <div className="control-section">
+                    <label>{t('label.format')}</label>
+                    <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value as ExportFormat)} className="select-input">
+                      {exportFormatOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </div>
+                </div>
 
-              {/* Share + QR preview + Embed */}
-              <div className="control-section">
-                <label>共有</label>
-                <ShareButtons tweetUrl={url} />
-              </div>
+                <div className="action-buttons">
+                  <button className="btn primary" onClick={handleDownload} type="button">
+                    <Download size={16} /> {t('btn.download')} ({exportFormatOptions.find(f => f.id === exportFormat)?.label})
+                  </button>
+                  <button className="btn secondary" onClick={handleCopy} type="button">
+                    {copied ? <><Check size={16} /> {t('btn.copied')}</> : <><Copy size={16} /> {t('btn.copy')}</>}
+                  </button>
+                </div>
+              </AccordionSection>
 
-              {showQR && (
+              {/* 5. Advanced */}
+              <AccordionSection title={t('accordion.advanced')}>
                 <div className="control-section">
-                  <label>QRコードプレビュー</label>
-                  <QRCode url={url} size={120} show={true} />
+                  <label>{t('label.device')}</label>
+                  <div className="device-selector">
+                    {deviceOptions.map(d => (
+                      <button key={d.id} className={`btn icon-toggle ${device === d.id ? 'active-toggle' : ''}`}
+                        onClick={() => setDevice(d.id)} type="button" style={{ fontSize: 12, padding: '6px 12px' }}>
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
 
-              <div className="control-section">
-                <label>埋め込みコード</label>
-                <EmbedCodePanel tweetUrl={url} imageDataUrl={embedDataUrl} />
-              </div>
+                <div className="control-row">
+                  <div className="control-section">
+                    <label>{t('label.qr')}</label>
+                    <button className={`btn icon-toggle ${showQR ? 'active-toggle' : ''}`} onClick={() => setShowQR(!showQR)} type="button">
+                      {showQR ? t('show') : t('hide')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="control-section">
+                  <label>{t('label.highlight')}</label>
+                  <HighlightPanel rules={highlights} onChange={setHighlights} />
+                </div>
+              </AccordionSection>
+
+              {/* 6. Brand & Share */}
+              <AccordionSection title={t('accordion.brandShare')}>
+                <BrandLogoPanel
+                  logoUrl={brandLogo.logoUrl}
+                  logoText={brandLogo.logoText}
+                  position={brandLogo.position}
+                  onLogoFile={brandLogo.setLogoFile}
+                  onLogoText={brandLogo.setLogoText}
+                  onPosition={brandLogo.setPosition}
+                  onClear={brandLogo.clearLogo}
+                />
+
+                <div className="control-section">
+                  <label>{t('label.share')}</label>
+                  <ShareButtons tweetUrl={url} />
+                </div>
+
+                {showQR && (
+                  <div className="control-section">
+                    <label>{t('label.qrPreview')}</label>
+                    <QRCode url={url} size={120} show={true} />
+                  </div>
+                )}
+
+                <div className="control-section">
+                  <label>{t('label.embed')}</label>
+                  <EmbedCodePanel tweetUrl={url} imageDataUrl={embedDataUrl} />
+                </div>
+              </AccordionSection>
+
+              {/* 7. Templates (keep outside accordion - has own collapsible) */}
+              <TemplatePanel onLoad={loadTemplateSettings} currentSettings={currentSettings} />
             </div>
           </>
         )}
