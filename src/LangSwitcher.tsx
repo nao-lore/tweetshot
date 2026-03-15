@@ -11,6 +11,7 @@ export function LangSwitcher({ lang, onChange }: LangSwitcherProps) {
   return (
     <button
       onClick={toggle}
+      aria-label="言語切替 / Language"
       title={lang === 'ja' ? 'Switch to English' : '\u65e5\u672c\u8a9e\u306b\u5207\u66ff'}
       style={{
         background: 'none',

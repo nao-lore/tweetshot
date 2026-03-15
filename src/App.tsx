@@ -182,16 +182,19 @@ export default function App() {
 
   // Save to history when tweet is generated
   useEffect(() => {
-    if (tweet && cardRef.current) {
-      const timer = setTimeout(async () => {
+    if (!tweet || !cardRef.current) return;
+    const timer = setTimeout(async () => {
+      try {
         const dataUrl = await getDataUrl('png');
         if (dataUrl) {
           history.addEntry(tweet, dataUrl, url);
           setEmbedDataUrl(dataUrl);
         }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+      } catch {
+        // Silently fail - history is non-critical
+      }
+    }, 500);
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tweet?.id]);
 

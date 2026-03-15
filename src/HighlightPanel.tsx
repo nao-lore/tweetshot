@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { HighlightRule } from './TextHighlight';
 
@@ -15,18 +16,18 @@ const PRESET_COLORS = [
 ];
 
 export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
-  function addRule() {
+  const addRule = useCallback(() => {
     onChange([...rules, { pattern: '', color: PRESET_COLORS[rules.length % PRESET_COLORS.length].value }]);
-  }
+  }, [rules, onChange]);
 
-  function updateRule(index: number, patch: Partial<HighlightRule>) {
+  const updateRule = useCallback((index: number, patch: Partial<HighlightRule>) => {
     const next = rules.map((r, i) => (i === index ? { ...r, ...patch } : r));
     onChange(next);
-  }
+  }, [rules, onChange]);
 
-  function removeRule(index: number) {
+  const removeRule = useCallback((index: number) => {
     onChange(rules.filter((_, i) => i !== index));
-  }
+  }, [rules, onChange]);
 
   return (
     <div style={{
@@ -73,6 +74,7 @@ export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
                 key={c.value}
                 type="button"
                 onClick={() => updateRule(i, { color: c.value })}
+                aria-label={c.label}
                 style={{
                   width: 18,
                   height: 18,
@@ -81,9 +83,15 @@ export function HighlightPanel({ rules, onChange }: HighlightPanelProps) {
                   border: rule.color === c.value ? '2px solid #fff' : '2px solid transparent',
                   cursor: 'pointer',
                   padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  lineHeight: 1,
+                  color: '#000',
                 }}
                 title={c.label}
-              />
+              >{rule.color === c.value ? '✓' : ''}</button>
             ))}
           </div>
 

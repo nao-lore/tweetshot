@@ -104,6 +104,26 @@ h1 {
   cursor: not-allowed;
 }
 
+.btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.bg-swatch:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.select-input:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
 .btn.icon-toggle {
   background: #2a2a2a;
   color: #e5e5e5;

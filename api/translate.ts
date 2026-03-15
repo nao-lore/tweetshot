@@ -39,6 +39,13 @@ export default async function handler(req: Request) {
 
     const data = await res.json();
 
+    if (!Array.isArray(data) || !Array.isArray(data[0])) {
+      return new Response(
+        JSON.stringify({ error: 'Unexpected response format' }),
+        { status: 502, headers: { 'content-type': 'application/json' } },
+      );
+    }
+
     // Google Translate returns nested arrays: [[["translated","original",...],...],...]
     const translated = (data[0] as Array<[string, ...unknown[]]>)
       .map((segment: [string, ...unknown[]]) => segment[0])

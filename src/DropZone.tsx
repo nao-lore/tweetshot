@@ -45,7 +45,11 @@ export function DropZone({ onDrop, children }: DropZoneProps) {
     const text = e.dataTransfer?.getData('text/plain') || e.dataTransfer?.getData('text/uri-list') || '';
     const url = extractUrl(text);
     if (url) {
-      onDrop(url);
+      try {
+        onDrop(url);
+      } catch (err) {
+        console.error('Drop handler error:', err);
+      }
     }
   }, [onDrop]);
 
@@ -60,7 +64,11 @@ export function DropZone({ onDrop, children }: DropZoneProps) {
     const url = extractUrl(text);
     if (url) {
       e.preventDefault();
-      onDrop(url);
+      try {
+        onDrop(url);
+      } catch (err) {
+        console.error('Paste handler error:', err);
+      }
     }
   }, [onDrop]);
 
@@ -87,10 +95,14 @@ export function DropZone({ onDrop, children }: DropZoneProps) {
     <div ref={wrapperRef} style={{ position: 'relative' }}>
       {children}
       {dragging && (
-        <div style={{
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
           position: 'absolute',
           inset: 0,
           background: 'rgba(102, 126, 234, 0.15)',
+          WebkitBackdropFilter: 'blur(2px)',
           backdropFilter: 'blur(2px)',
           display: 'flex',
           alignItems: 'center',

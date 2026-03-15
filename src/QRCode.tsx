@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 interface QRCodeProps {
   url: string;
   size?: number;
@@ -5,9 +7,12 @@ interface QRCodeProps {
 }
 
 export function QRCode({ url, size = 200, show }: QRCodeProps) {
-  if (!show) return null;
+  const src = useMemo(
+    () => `https://chart.googleapis.com/chart?chs=${size}x${size}&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`,
+    [url, size],
+  );
 
-  const src = `https://chart.googleapis.com/chart?chs=${size}x${size}&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+  if (!show) return null;
 
   return (
     <img
@@ -27,7 +32,10 @@ interface QRCodeOverlayProps {
 }
 
 export function QRCodeOverlay({ url, position, size }: QRCodeOverlayProps) {
-  const src = `https://chart.googleapis.com/chart?chs=${size}x${size}&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+  const src = useMemo(
+    () => `https://chart.googleapis.com/chart?chs=${size}x${size}&cht=qr&chl=${encodeURIComponent(url)}&choe=UTF-8`,
+    [url, size],
+  );
 
   const positionStyle: React.CSSProperties =
     position === 'bottom-right'

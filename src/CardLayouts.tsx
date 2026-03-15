@@ -214,6 +214,7 @@ function QuoteLayout({ tweet, isDark, fontFamily }: LayoutProps) {
         lineHeight: 1.8,
         color: textColor,
         whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
         padding: '24px 12px 0',
         position: 'relative',
         zIndex: 1,

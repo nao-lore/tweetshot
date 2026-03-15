@@ -101,6 +101,11 @@ export const ThreadView = forwardRef<HTMLDivElement, Props>(
                       alt=""
                       className="tweet-avatar"
                       crossOrigin="anonymous"
+                      onError={(e) => {
+                        const el = e.currentTarget;
+                        el.onerror = null;
+                        el.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="%23667eea" width="48" height="48" rx="24"/><text x="24" y="30" text-anchor="middle" fill="white" font-size="20">?</text></svg>');
+                      }}
                     />
                     <div className="tweet-author">
                       <div className="tweet-name">

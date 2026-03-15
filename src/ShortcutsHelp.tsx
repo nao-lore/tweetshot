@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface ShortcutsHelpProps {
   open: boolean;
@@ -14,6 +14,9 @@ const shortcuts = [
 ];
 
 export function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -23,14 +26,23 @@ export function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
 
   useEffect(() => {
     if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Focus close button when modal opens
+    requestAnimationFrame(() => closeRef.current?.focus());
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      // Return focus when modal closes
+      previousFocusRef.current?.focus();
+    };
   }, [open, handleKeyDown]);
 
   if (!open) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -43,6 +55,7 @@ export function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
       }}
     >
       <div
+        aria-label="キーボードショートカット"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#1a1a2e',
@@ -54,16 +67,34 @@ export function ShortcutsHelp({ open, onClose }: ShortcutsHelpProps) {
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}
       >
-        <h3
-          style={{
-            margin: '0 0 16px',
-            fontSize: 16,
-            fontWeight: 600,
-            color: '#fff',
-          }}
-        >
-          Keyboard Shortcuts
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 16px' }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#fff',
+            }}
+          >
+            Keyboard Shortcuts
+          </h3>
+          <button
+            ref={closeRef}
+            onClick={onClose}
+            aria-label="閉じる"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#888',
+              cursor: 'pointer',
+              fontSize: 18,
+              lineHeight: 1,
+              padding: '2px 6px',
+            }}
+          >
+            &times;
+          </button>
+        </div>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {shortcuts.map(({ keys, description }) => (
             <li
