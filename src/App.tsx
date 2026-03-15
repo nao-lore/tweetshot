@@ -36,6 +36,14 @@ import { LoadingSkeleton } from './LoadingSkeleton';
 import { Toast } from './Toast';
 import { useStats } from './useStats';
 import { StatsPanel } from './StatsPanel';
+import { useUrlStatus } from './useOptimistic';
+import { usePrefetch } from './usePrefetch';
+import { useEasterEggs } from './useEasterEggs';
+import { Confetti } from './Confetti';
+import { useReducedMotion } from './useReducedMotion';
+import { SkipToContent } from './SkipToContent';
+import { GreenFootprint } from './GreenFootprint';
+import { AboutModal } from './AboutModal';
 
 // Lazy-loaded components (conditionally rendered)
 const HistoryPanel = lazy(() => import('./HistoryPanel').then(m => ({ default: m.HistoryPanel })));
@@ -100,6 +108,23 @@ export default function App() {
   // Embed data
   const [embedDataUrl, setEmbedDataUrl] = useState<string | null>(null);
 
+  // L7: Optimistic UI + Prefetch
+  const urlStatus = useUrlStatus(url);
+  const { getCached } = usePrefetch(url);
+
+  // L8: Easter eggs + About
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  useEasterEggs({
+    onKonami: () => setShowConfetti(true),
+    onSecretWord: (word) => {
+      if (word === 'party') setShowConfetti(true);
+    },
+  });
+
+  // L9: Reduced motion
+  const reducedMotion = useReducedMotion();
+
   const cardRef = useRef<HTMLDivElement>(null);
   const { download, copyToClipboard, getDataUrl } = useScreenshot(cardRef, pixelRatio);
 
@@ -149,6 +174,15 @@ export default function App() {
     const parsed = parsePostUrl(url);
     if (!parsed) {
       setError(t('error.invalidUrl'));
+      return;
+    }
+
+    // Try prefetch cache first
+    const cached = getCached(url);
+    if (cached && viewMode === 'single') {
+      setTweet(cached);
+      setTweets([cached]);
+      stats.trackTweets(1);
       return;
     }
 
@@ -321,10 +355,11 @@ export default function App() {
 
   return (
     <DropZone onDrop={handleDrop}>
-      <div className="app">
+      <SkipToContent />
+      <div className={`app ${reducedMotion ? 'reduced-motion' : ''}`}>
         <header>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div />
+            <button onClick={() => setShowAbout(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#667eea', fontSize: 11, padding: '4px 8px' }} type="button">About</button>
             <div style={{ textAlign: 'center', flex: 1 }}>
               <h1>{t('app.title')}</h1>
               <p className="tagline">{t('app.tagline')}</p>
@@ -361,6 +396,12 @@ export default function App() {
             <button className="btn primary" onClick={handleGenerate} disabled={loading || !url.trim()} type="button">
               {loading ? <Loader2 size={18} className="spin" /> : t('btn.generate')}
             </button>
+          </div>
+        )}
+
+        {urlStatus.hint && (
+          <div style={{ fontSize: 12, color: urlStatus.valid ? '#4ade80' : '#f59e0b', marginBottom: 8, marginTop: -12 }}>
+            {urlStatus.hint}
           </div>
         )}
 
@@ -623,10 +664,14 @@ export default function App() {
         {/* Stats / Gamification */}
         <StatsPanel stats={stats.stats} badges={stats.badges} />
 
-        <footer>
+        <footer id="main-content">
           <p>{t('footer.text')}</p>
+          <GreenFootprint exportCount={stats.stats.totalExports} />
         </footer>
       </div>
+
+      <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} />
+      <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
 
       {toastMessage && (
         <Toast message={toastMessage} onDone={() => setToastMessage(null)} />
