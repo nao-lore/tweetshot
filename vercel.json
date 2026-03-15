@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/api/tweet", "destination": "/api/tweet" }
+    { "source": "/api/tweet", "destination": "/api/tweet" },
+    { "source": "/api/bluesky", "destination": "/api/bluesky" },
+    { "source": "/api/tiktok", "destination": "/api/tiktok" },
+    { "source": "/api/translate", "destination": "/api/translate" }
   ]
 }

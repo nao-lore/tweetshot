@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Heart, MessageCircle } from 'lucide-react';
 import type { TweetData, Background, SizePreset } from './types';
 import { patternBackgroundSizes } from './backgrounds';
+import { BrandLogo } from './BrandLogo';
 
 interface Props {
   tweet: TweetData;
@@ -15,6 +16,11 @@ interface Props {
   border: boolean;
   borderColor: string;
   sizePreset: SizePreset;
+  imageBackground?: string | null;
+  brandLogoUrl?: string | null;
+  brandLogoText?: string;
+  brandLogoPosition?: 'bottom-center' | 'bottom-right' | 'top-right';
+  displayText?: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -39,14 +45,14 @@ function formatCount(n: number): string {
 }
 
 export const TweetCard = forwardRef<HTMLDivElement, Props>(
-  ({ tweet, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset }, ref) => {
+  ({ tweet, background, cardTheme, padding, shadow, borderRadius, showMetrics, showWatermark, border, borderColor, sizePreset, imageBackground, brandLogoUrl, brandLogoText = 'Made with TweetShot', brandLogoPosition = 'bottom-center', displayText }, ref) => {
     const isDark = cardTheme === 'dark';
     const bgSize = patternBackgroundSizes[background.id];
 
     const wrapperStyle: React.CSSProperties = {
-      background: background.style,
+      background: imageBackground ? `url(${imageBackground}) center/cover` : background.style,
       padding: `${padding}px`,
-      ...(bgSize && {
+      ...(bgSize && !imageBackground && {
         backgroundSize: bgSize,
         backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
       }),
@@ -63,12 +69,19 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
       ...(border && { border: `2px solid ${borderColor}` }),
     };
 
+    const showBrandLogo = showWatermark && (brandLogoUrl || brandLogoText);
+    const isTopPosition = brandLogoPosition === 'top-right';
+
     return (
       <div
         ref={ref}
         className="tweet-shot-wrapper"
         style={wrapperStyle}
       >
+        {showBrandLogo && isTopPosition && (
+          <BrandLogo logoUrl={brandLogoUrl ?? null} logoText={brandLogoText} position={brandLogoPosition} />
+        )}
+
         <div className={`tweet-card ${isDark ? 'dark' : ''}`} style={cardStyle}>
           <div className="tweet-header">
             <img
@@ -99,7 +112,7 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
             </svg>
           </div>
 
-          <div className="tweet-text">{tweet.text}</div>
+          <div className="tweet-text">{displayText ?? tweet.text}</div>
 
           {tweet.mediaUrl && (
             <img
@@ -128,7 +141,12 @@ export const TweetCard = forwardRef<HTMLDivElement, Props>(
           )}
         </div>
 
-        {showWatermark && <div className="watermark">Made with TweetShot</div>}
+        {showBrandLogo && !isTopPosition && (
+          <BrandLogo logoUrl={brandLogoUrl ?? null} logoText={brandLogoText} position={brandLogoPosition} />
+        )}
+        {showWatermark && !showBrandLogo && (
+          <div className="watermark">Made with TweetShot</div>
+        )}
       </div>
     );
   },
