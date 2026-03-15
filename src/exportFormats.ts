@@ -15,7 +15,20 @@ export async function exportToFormat(
   pixelRatio: number,
   backgroundColor?: string,
 ): Promise<{ dataUrl: string; blob: Blob | null }> {
-  const commonOptions = { pixelRatio, cacheBust: true };
+  const commonOptions = {
+    pixelRatio,
+    cacheBust: true,
+    skipFonts: true,
+    fetchRequestInit: { mode: 'cors' as RequestMode },
+    filter: (node: HTMLElement) => {
+      // Skip external images that fail CORS
+      if (node.tagName === 'IMG') {
+        const src = node.getAttribute('src') ?? '';
+        if (src.startsWith('https://chart.googleapis.com')) return false;
+      }
+      return true;
+    },
+  };
 
   switch (format) {
     case 'png': {
